@@ -1,0 +1,60 @@
+# ᛋᛈᚨ · helgisiðr vikunnar — vǫlvan vaknar, heyrir á heiminn, ok kveðr.
+name: Spá vikunnar
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"        # hvern mánadag at dögun (06:00 UTC)
+  workflow_dispatch:           # vekja vǫlvuna at vild
+  push:
+    branches: [main]
+    paths:
+      - "mot/**"
+      - "seidr/**"
+      - "hof/stafir.css"
+
+permissions:
+  contents: write              # rísta nýja spá í annálana
+  pages: write                 # birta hofit heiminum
+  id-token: write              # krafa deploy-pages
+  models: read                 # andinn — frjáls spá
+
+concurrency:
+  group: spa-vikunnar
+  cancel-in-progress: false
+
+jobs:
+  kveda:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.birta.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Vǫlvan kveðr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python seidr/vala.py
+
+      - name: Rísta í annálana
+        run: |
+          git config user.name  "Vǫlva"
+          git config user.email "volva@users.noreply.github.com"
+          git add hof/spa.json hof/annalar.json hof/index.html hof/salr.html
+          if git diff --cached --quiet; then
+            echo "Engi ný spá at rísta."
+          else
+            git commit -m "spá: $(date -u +%G-V%V)"
+            git push
+          fi
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: hof
+      - id: birta
+        uses: actions/deploy-pages@v4

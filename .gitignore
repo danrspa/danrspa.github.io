@@ -1,0 +1,9 @@
+# þat sem heiminum kemr ekki við
+.workshop/
+.claude/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.DS_Store

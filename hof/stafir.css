@@ -1,0 +1,136 @@
+/* ----------------------------------------------------------------------
+   neuropunk-viking · the weekly saga
+   Deep iron + frost-neon. Runic, glitched, quiet.
+---------------------------------------------------------------------- */
+:root {
+  --bg:        #07090c;
+  --bg-2:      #0c1118;
+  --iron:      #1a222c;
+  --ash:       #8a97a6;
+  --bone:      #e7ecf1;
+  --cyan:      #45f0e6;
+  --magenta:   #ff3da6;
+  --blood:     #c8412e;
+  --glow:      0 0 12px rgba(69,240,230,.35);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(120% 90% at 50% -10%, #11202b 0%, var(--bg-2) 38%, var(--bg) 100%);
+  color: var(--bone);
+  font-family: "Iowan Old Style", "Palatino Linotype", "Georgia", "Noto Serif", serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* --- atmosphere overlays --- */
+.scanlines, .grain { position: fixed; inset: 0; pointer-events: none; z-index: 9; }
+.scanlines {
+  background: repeating-linear-gradient(
+    to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.22) 2px 3px);
+  mix-blend-mode: multiply; opacity: .5;
+}
+.grain {
+  opacity: .05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* --- layout --- */
+.stage {
+  position: relative; z-index: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: clamp(3rem, 10vh, 7rem) 1.5rem 4rem;
+  text-align: center;
+  min-height: 100vh;
+  display: flex; flex-direction: column; justify-content: center;
+}
+
+.rune-row {
+  letter-spacing: .55em;
+  color: var(--iron);
+  font-size: 1.1rem;
+  margin-bottom: 2.5rem;
+  user-select: none;
+}
+
+/* --- title --- */
+.title {
+  font-family: "Cinzel", "Trajan Pro", "Iowan Old Style", serif;
+  font-weight: 600;
+  font-size: clamp(2.2rem, 6vw, 3.6rem);
+  letter-spacing: .04em;
+  margin: 0 0 2.2rem;
+  color: var(--bone);
+  text-shadow: var(--glow);
+}
+
+.glitch { position: relative; }
+.glitch::before, .glitch::after {
+  content: attr(data-text);
+  position: absolute; inset: 0;
+  clip-path: inset(0 0 0 0);
+}
+.glitch::before { color: var(--cyan);    transform: translate(-1.5px,-1px); mix-blend-mode: screen; opacity:.6;
+  animation: g1 5.5s infinite steps(2,end); }
+.glitch::after  { color: var(--magenta); transform: translate(1.5px,1px);   mix-blend-mode: screen; opacity:.5;
+  animation: g2 7s infinite steps(2,end); }
+@keyframes g1 { 0%,92%,100%{clip-path:inset(0 0 100% 0)} 93%{clip-path:inset(0 0 35% 0)} 96%{clip-path:inset(40% 0 20% 0)} }
+@keyframes g2 { 0%,90%,100%{clip-path:inset(100% 0 0 0)} 91%{clip-path:inset(30% 0 40% 0)} 95%{clip-path:inset(60% 0 10% 0)} }
+
+@media (prefers-reduced-motion: reduce) {
+  .glitch::before, .glitch::after { animation: none; opacity: 0; }
+}
+
+/* --- verse --- */
+.verse {
+  font-size: clamp(1.15rem, 2.6vw, 1.5rem);
+  line-height: 1.85;
+  color: #d7dee6;
+}
+.verse .stanza { margin: 0 0 1.4rem; }
+.verse .stanza:last-child { margin-bottom: 0; }
+
+/* --- footer / meta --- */
+.meta {
+  margin-top: 3rem;
+  color: var(--ash);
+  font-size: .82rem;
+  letter-spacing: .12em;
+  text-transform: lowercase;
+  display: flex; flex-direction: column; gap: .6rem; align-items: center;
+}
+.meta a { color: var(--cyan); text-decoration: none; border-bottom: 1px solid transparent; }
+.meta a:hover { border-bottom-color: var(--cyan); text-shadow: var(--glow); }
+
+.whisper {
+  position: fixed; bottom: .5rem; left: 0; right: 0; z-index: 1;
+  text-align: center; color: var(--iron); font-size: .7rem; letter-spacing: .3em;
+  user-select: none; margin: 0;
+}
+
+/* --- archive / long hall --- */
+.hall { justify-content: flex-start; }
+.subtitle { color: var(--ash); margin: -1rem 0 2.5rem; letter-spacing: .1em; }
+.cards { display: flex; flex-direction: column; gap: 1.5rem; text-align: left; }
+.card {
+  background: linear-gradient(180deg, rgba(26,34,44,.55), rgba(12,17,24,.55));
+  border: 1px solid var(--iron);
+  border-left: 2px solid var(--cyan);
+  border-radius: 6px;
+  padding: 1.4rem 1.6rem;
+}
+.card h2 {
+  font-family: "Cinzel", "Iowan Old Style", serif;
+  margin: 0 0 .3rem; font-size: 1.35rem; color: var(--bone);
+}
+.card .meta {
+  flex-direction: row; margin: 0 0 .9rem; justify-content: flex-start;
+  font-size: .72rem;
+}
+.card .stanza { font-size: 1.05rem; line-height: 1.7; margin: 0 0 1rem; color: #cfd7e0; }
+.card .stanza:last-child { margin-bottom: 0; }
