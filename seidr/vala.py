@@ -10,9 +10,11 @@
 from __future__ import annotations
 
 import argparse as ᚲᛁᛟᚱ              # kjǫr — val veganna
+import hashlib as ᚺᚨᛋ               # hasl — mark ór mǫrgu
 import json as ᚱᚢᚾ                  # rúnir — leyndarmál talna
 import random as ᚺᛚᚢᛏ              # hlutkesti — kast um lokaorðin
 import os as ᚢᛁᛋᛏ                   # vist — heimkynni andans
+import re as ᛚᛖᛁᛏ                   # leit — mynstr í orðum
 import sys as ᚷᚨᛈ                   # ginnunga-gap — hit auða
 from datetime import datetime as ᛋᛏᚢᚾᛞ, timezone as ᛒᛖᛚᛏᛁ
 from pathlib import Path as ᛋᛏᛁᚷᚱ   # stígr — gata um hofit
@@ -68,14 +70,43 @@ Titlar þegar bornir — engi líkr þeim:
 {titlar}
 
 {lokun}
-
+{aðfinnsla}
 Yrk eitt kvæði ór þessari stemningu, ekki meir.
 """
 
+# Vǫlvan hafnaði fyrri tilraun. Andinn veit þat eigi nema honum sé sagt —
+# ella endrtekr hann somu sǫkina þrisvar ok þegir at lyktum.
+AÐFINNSLA = """
+Fyrri tilraun þinni var HAFNAT, af þessari sǫk:
+  {sǫk}
+Yrk at nýju, ok forðastu þessa sǫk sérstakliga. Veldu aðrar myndir ok annan titil.
+"""
+
 # Lokaorðin — vǫlvan kastar; sjaldan fellr rúnneska á tunguna (~1 af 5).
+#
+# Áðr var andinn beðinn at YRKJA rússneska línu, ok hann smíðaði orð sem engi
+# maðr mælir: "Теплотень", "Согревка", "Солнце тепловик". Vinrinn les þá tungu;
+# hann sæi skrǫk þegar. Nú velr vǫlvan ór línum sem menn hafa mælt.
+LOKAORÐ_RUSS = (
+    "держись, брат",
+    "не сдавайся",
+    "мы ещё живы",
+    "дыши, брат",
+    "всё пройдёт",
+    "свет останется",
+    "ты не один",
+    "живи, брат",
+)
+
+
+def _lokaorð(vika: str) -> str:
+    mark = int(ᚺᚨᛋ.sha256(vika.encode("utf-8")).hexdigest()[:8], 16)
+    return LOKAORÐ_RUSS[mark % len(LOKAORÐ_RUSS)]
+
+
 LOKUN_RUSS = (
-    "Endaðu kvæðit á einni stuttri, hlýrri rússneskri línu með kýrillsku letri, "
-    "ný-orðaðri."
+    "Endaðu kvæðit á þessari línu, ORÐRÉTT ok á sérstakri línu, "
+    "ok yrk ekki rússnesku sjálfr:\n{lína}"
 )
 LOKUN_ENGL = "Haf kvæðit allt á ensku, án rússnesku ok án kýrillsks leturs."
 
@@ -102,12 +133,14 @@ def _skap_í_línur(skap: dict) -> str:
 
 def spyrja_andann(
     skap: dict,
+    vika: str,
     árstíð: str,
     háttr: str,
     þreytt: list[str],
     titlar: list[str],
     rúss: bool = False,
     hiti: float = 1.0,
+    sǫk: str | None = None,
 ) -> tuple[dict, str]:
     ákall = ÁKALL.format(
         skap=_skap_í_línur(skap),
@@ -115,10 +148,20 @@ def spyrja_andann(
         háttr=háttr,
         þreytt=", ".join(þreytt) if þreytt else "(engi enn)",
         titlar="\n".join(f"- {t}" for t in titlar) if titlar else "(engir enn)",
-        lokun=(LOKUN_RUSS if rúss else LOKUN_ENGL),
+        lokun=(LOKUN_RUSS.format(lína=_lokaorð(vika)) if rúss else LOKUN_ENGL),
+        aðfinnsla=AÐFINNSLA.format(sǫk=sǫk) if sǫk else "",
     )
     efni, brunnr = andi.kalla(GALDR, ákall, hiti)
     return _lesa_spá(efni), brunnr
+
+
+def _hreinsa(vísur: str) -> str:
+    """Andinn sendir stundum lista-merki ('- ', '* ', '1. ') fyrir hverri línu.
+    Þau eru mál skjalsins, eigi kvæðisins, ok skulu eigi ristast í steininn."""
+    út = []
+    for l in vísur.splitlines():
+        út.append(ᛚᛖᛁᛏ.sub(r"^\s*(?:[-*\u2022]|\d+[.)])\s+", "", l).rstrip())
+    return "\n".join(út).strip()
 
 
 def _lesa_spá(efni: str) -> dict:
@@ -128,12 +171,12 @@ def _lesa_spá(efni: str) -> dict:
         efni = efni.split("\n", 1)[1] if "\n" in efni else efni
     try:
         hlutr = ᚱᚢᚾ.loads(efni)
-        return {"titill": hlutr["title"].strip(), "vísur": hlutr["verse"].strip()}
+        return {"titill": hlutr["title"].strip(), "vísur": _hreinsa(hlutr["verse"])}
     except Exception:
         línur = [l for l in efni.splitlines() if l.strip()]
         return {
             "titill": (línur[0].strip(" #*\"") if línur else "Nafnlaus spá"),
-            "vísur": "\n".join(línur[1:]) if len(línur) > 1 else efni,
+            "vísur": _hreinsa("\n".join(línur[1:]) if len(línur) > 1 else efni),
         }
 
 
@@ -155,12 +198,12 @@ def kveða_spá(
     print(f"Háttr: {háttr}", file=ᚷᚨᛈ.stderr)
     print(f"Slitin orð ({len(þreytt)}): {', '.join(þreytt)}", file=ᚷᚨᛈ.stderr)
 
-    síðasta_sǫk = "engi tilraun"
-    for tilraun in range(1, 4):
-        hiti = 0.9 + 0.15 * tilraun
+    síðasta_sǫk: str | None = None
+    for tilraun in range(1, 5):
+        hiti = 0.9 + 0.12 * tilraun
         try:
             spá, brunnr = spyrja_andann(
-                skap, árstíð, háttr, þreytt, titlar, rúss, hiti
+                skap, vika, árstíð, háttr, þreytt, titlar, rúss, hiti, síðasta_sǫk
             )
         except andi.ÞǫgnAndans:
             raise
@@ -179,7 +222,7 @@ def kveða_spá(
         print(f"Tilraun {tilraun} hafnat — {sǫk}", file=ᚷᚨᛈ.stderr)
 
     raise andi.ÞǫgnAndans(
-        f"Vǫlvan náði engri nýrri spá í þremr tilraunum ({síðasta_sǫk})."
+        f"Vǫlvan náði engri nýrri spá í fjórum tilraunum ({síðasta_sǫk})."
     )
 
 
