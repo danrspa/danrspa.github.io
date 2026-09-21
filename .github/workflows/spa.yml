@@ -68,8 +68,10 @@ jobs:
               h = json.load(open("hof/heilsa.json", encoding="utf-8"))
           except Exception as e:
               sys.exit(f"Engi hjartsláttr fannst: {e}")
-          síðast = datetime.datetime.strptime(h["síðasta_spá"], "%Y-%m-%dT%H:%M:%SZ")
-          dagar = (datetime.datetime.utcnow() - síðast).days
+          síðast = datetime.datetime.strptime(
+              h["síðasta_spá"], "%Y-%m-%dT%H:%M:%SZ"
+          ).replace(tzinfo=datetime.timezone.utc)
+          dagar = (datetime.datetime.now(datetime.timezone.utc) - síðast).days
           print(f"Síðasta spá: {h['vika']} ({h['brunnr']}), fyrir {dagar} dǫgum.")
           if dagar > 8:
               sys.exit(f"Vǫlvan hefir þagat í {dagar} daga. Helgisiðrinn fellr.")
