@@ -115,6 +115,95 @@ def er_endrtekning(spá: dict, annálar: list[dict]) -> str | None:
     return None
 
 
+# --------------------------------------------------------------------------
+# Lekadómr — vǫrn gegn því at heimrinn sjáist berum orðum
+#
+# Galdrinn bað hana nefna engan atburð. Hon nefndi Jemen. Bón dugir eigi einum
+# veikum anda; hér er mælt, eigi beðit.
+# --------------------------------------------------------------------------
+# Norrœn orð er borizt hafa í kvæðit sem vorð heimsins (djúpt haust, vaxandi gibba)
+NORRŒNT = ᛚᛖᛁᛏ.compile(
+    r"\b(gibba|haust|hávetr|vetr|sumar|vár|máni|tungl|sigð|jafndægur|"
+    r"sólhvörf|djúpt|vaxandi|þverrandi|ófriðr|harmr|járn|vald|þrjózka|ljós)\b",
+    ᛚᛖᛁᛏ.I,
+)
+# Orð sem eiga heima í frétt, eigi í kvæði
+FRÉTTAMÁL = ᛚᛖᛁᛏ.compile(
+    r"\b(ai|llm|gpu|ci|api|ceo|algorithm|software|startup|server|kernel|"
+    r"compiler|protocol|dataset|blockchain|percent|quarterly|lawsuit|"
+    r"parliament|senate|tariff|sanctions?)\b",
+    ᛚᛖᛁᛏ.I,
+)
+# Eiginnǫfn sem hvorki hefja línu né eru "I"
+EIGINNAFN = ᛚᛖᛁᛏ.compile(r"(?<![.\n!?\"'—-]\s)(?<!^)\b([A-Z][a-z]{2,})\b", ᛚᛖᛁᛏ.M)
+LEYFÐ_NǪFN = frozenset("""
+I A The A God Death Winter Summer Spring Autumn North South East West
+Monday Tuesday Wednesday Thursday Friday Saturday Sunday
+""".split())
+
+
+def leki(spá: dict, hrátt: list[str] | None = None) -> str | None:
+    """Skilar sǫk ef heimrinn sést berum orðum í kvæðinu — annars None."""
+    texti = f"{spá.get('titill','')}\n{spá.get('vísur','')}"
+
+    m = NORRŒNT.search(texti)
+    if m:
+        return f"norrœnt teikn laust inn í kvæðit: '{m.group(0)}'"
+
+    m = FRÉTTAMÁL.search(texti)
+    if m:
+        return f"fréttamál í kvæðinu: '{m.group(0)}'"
+
+    # Orð tekin beint ór fyrirsǫgnum vikunnar. Borit saman um stofn (5 stafi),
+    # svá at 'Yemenis' í frétt grípi 'Yemen' í kvæði.
+    if hrátt:
+        stofnar = set()
+        for r in hrátt:
+            stofnar |= {
+                o.lower()[:5] for o in ᛚᛖᛁᛏ.findall(r"[A-Za-z]{5,}", r)
+                if o.lower() not in ᛋᛏᛟᛈ
+            }
+        for o in ᛚᛖᛁᛏ.findall(r"[A-Za-z]{5,}", texti):
+            if o.lower() not in ᛋᛏᛟᛈ and o.lower()[:5] in stofnar:
+                return f"orð tekit ór fyrirsǫgn: '{o}'"
+
+    # Eiginnǫfn eru vegin í vísunum einum — titill má vera með hástǫfum at hætti.
+    nǫfn = [n for n in EIGINNAFN.findall(spá.get("vísur", "")) if n not in LEYFÐ_NǪFN]
+    if nǫfn:
+        return f"eiginnafn í vísunum: '{nǫfn[0]}'"
+
+    return None
+
+
+# --------------------------------------------------------------------------
+# Formdómr — þat sem beðit var um, ok þat sem kom
+#
+# Galdrinn bað um tvau erindi ok fjórar línur hvert; andinn sendi tvær línur.
+# Bón dugir eigi. Hér er talit.
+# --------------------------------------------------------------------------
+LÍNUR_FÆST, LÍNUR_FLEST = 4, 14
+
+
+def vanefndir(spá: dict, þreytt: list[str] | None = None) -> str | None:
+    """Skilar sǫk ef kvæðit heldr eigi þat sem um var beðit — annars None."""
+    línur = [l for l in spá.get("vísur", "").splitlines() if l.strip()]
+    if len(línur) < LÍNUR_FÆST:
+        return f"of stutt: {len(línur)} línur, {LÍNUR_FÆST} hit fæsta"
+    if len(línur) > LÍNUR_FLEST:
+        return f"of langt: {len(línur)} línur, {LÍNUR_FLEST} hit flesta"
+
+    # Ein lína sem er heilt erindi í dulargervi — andinn hnoðar stundum saman
+    if any(len(l) > 120 for l in línur):
+        return "lína of lǫng — erindi hnoðat í eina línu"
+
+    if þreytt:
+        orð = {o.lower() for o in ᛚᛖᛁᛏ.findall(r"[A-Za-z']+", spá.get("vísur", ""))}
+        slitin = sorted(orð & {t.lower() for t in þreytt})
+        if slitin:
+            return "slitin orð endrtekin: " + ", ".join(slitin[:4])
+    return None
+
+
 def lesa_annála(leið) -> list[dict]:
     import json as ᚱᚢᚾ
     if not leið.exists():

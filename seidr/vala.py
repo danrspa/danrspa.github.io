@@ -37,8 +37,11 @@ Háttr:
 - Heimspekilegt ok tímalaust: ørlǫg, frelsi, sjálfit hjá vélinni, smæð keisaradœma, \
 reisn hinna óstýrðu, ok eldrinn sem lifir af þat sem at honum sœkir.
 - Knappt, þungt, sǫgulegt. Kenningar vel þegnar. Rím er frjálst.
-- Þér kunna at fylgja fá skap-orð um veðr heimsins. Lát þau einungis lita stemninguna. \
-Snú þeim í myndir náttúru ok ørlaga; haldu kvæðinu almennu ok nefn enga atburði.
+- Þér eru gefnar tǫlur um veðr heimsins — ófriðr, harmr, járn, vald, þrjózka, ljós. \
+Þær eru stemning ein. Nefn þær aldri, hvorki at heiti né tǫlu; snú þeim í myndir \
+náttúru ok ørlaga. Þú sér engar fyrirsagnir, því at engar eru þér gefnar.
+- Engi eiginnǫfn: engi lǫnd, engir menn, engar borgir, engi fyrirtœki, engi vélaheiti.
+- Engi norrœn orð í kvæðinu sjálfu. Kvæðit er á ensku, allt.
 - Titill ok kvæði skulu vera á ensku. Stuttr myndrœnn titill, tvau til fjǫgur orð.
 - Árstíðin sem þér er sǫgð er hin sanna. Yrk í hennar ljósi, eigi í vetri sem eigi er.
 - Forðastu hin slitnu orð sem þér eru talin. Þau eru þegar kveðin til þurrðar. \
@@ -50,8 +53,8 @@ Svaraðu með JSON-hlut, engum kóða-girðingum:
 """
 
 ÁKALL = """\
-Skap-orð þessar viku:
-{teikn}
+Skap heimsins þessa viku — tǫlur einar, 0 til 10. Þær eru veðr, eigi efni:
+{skap}
 
 Árstíðin nú: {árstíð}.
 
@@ -80,8 +83,25 @@ LOKUN_ENGL = "Haf kvæðit allt á ensku, án rússnesku ok án kýrillsks letur
 # --------------------------------------------------------------------------
 # Spyrja andann  (kalla ór djúpinu eptir spá)
 # --------------------------------------------------------------------------
+def _skap_í_línur(skap: dict) -> str:
+    """Skapit ritat svá at engi setning heimsins fylgi með."""
+    raðir = [
+        f"  ófriðr    {skap['ófriðr']:2d}/10",
+        f"  harmr     {skap['harmr']:2d}/10",
+        f"  járn      {skap['járn']:2d}/10",
+        f"  vald      {skap['vald']:2d}/10",
+        f"  þrjózka   {skap['þrjózka']:2d}/10",
+        f"  ljós      {skap['ljós']:2d}/10  ({skap['tungl']} tungl)",
+    ]
+    if skap.get("jafnvægi"):
+        raðir.append("  jafndægur — dagr ok nótt jǫfn")
+    if skap.get("hvörf"):
+        raðir.append("  sólhvörf — vending ljóssins")
+    return "\n".join(raðir)
+
+
 def spyrja_andann(
-    teikn: list[str],
+    skap: dict,
     árstíð: str,
     háttr: str,
     þreytt: list[str],
@@ -90,7 +110,7 @@ def spyrja_andann(
     hiti: float = 1.0,
 ) -> tuple[dict, str]:
     ákall = ÁKALL.format(
-        teikn="\n".join(f"- {t}" for t in teikn),
+        skap=_skap_í_línur(skap),
         árstíð=árstíð,
         háttr=háttr,
         þreytt=", ".join(þreytt) if þreytt else "(engi enn)",
@@ -118,11 +138,12 @@ def _lesa_spá(efni: str) -> dict:
 
 
 def kveða_spá(
-    teikn: list[str],
+    skap: dict,
     stund: ᛋᛏᚢᚾᛞ,
     vika: str,
     annálar: list[dict],
     rúss: bool = False,
+    hrátt: list[str] | None = None,
 ) -> tuple[dict, str, str]:
     """Kveðr, ok dœmir sjálf um sitt verk. Sé kvæðit endrtekning, kveðr hon aptr
     með heitara blóði. Þagni allir brunnar — þá þegir hon upphátt (ÞǫgnAndans);
@@ -139,7 +160,7 @@ def kveða_spá(
         hiti = 0.9 + 0.15 * tilraun
         try:
             spá, brunnr = spyrja_andann(
-                teikn, árstíð, háttr, þreytt, titlar, rúss, hiti
+                skap, árstíð, háttr, þreytt, titlar, rúss, hiti
             )
         except andi.ÞǫgnAndans:
             raise
@@ -147,7 +168,11 @@ def kveða_spá(
             síðasta_sǫk = f"{type(e).__name__}: {e}"
             print(f"Tilraun {tilraun} brást: {síðasta_sǫk}", file=ᚷᚨᛈ.stderr)
             continue
-        sǫk = minni.er_endrtekning(spá, annálar)
+        sǫk = (
+            minni.leki(spá, hrátt)
+            or minni.vanefndir(spá, þreytt)
+            or minni.er_endrtekning(spá, annálar)
+        )
         if not sǫk:
             return spá, brunnr, háttr
         síðasta_sǫk = sǫk
@@ -226,9 +251,12 @@ def helgisiðr() -> int:
     else:
         teikn = heimr.safna_teiknum(nú)
         rúss = ᚺᛚᚢᛏ.random() < 0.2   # sjaldan fellr rúnneskan á tunguna (~1 af 5)
-        print(f"Teikn ({teikn['tala']}): {teikn['teikn']} | rúnneska={rúss}", file=ᚷᚨᛈ.stderr)
+        print(f"Raddir ({teikn['tala']}) | rúnneska={rúss}", file=ᚷᚨᛈ.stderr)
+        print(f"Skap: {teikn['skap']}", file=ᚷᚨᛈ.stderr)
         try:
-            spá, brunnr, háttr = kveða_spá(teikn["teikn"], nú, vika, fyrri, rúss)
+            spá, brunnr, háttr = kveða_spá(
+                teikn["skap"], nú, vika, fyrri, rúss, teikn["hrátt"]
+            )
         except andi.ÞǫgnAndans as e:
             # Vǫlvan þegir heldr en at endrtaka sik. Hofit stendr sem þat stóð;
             # helgisiðrinn fellr, svá at þǫgnin sjáist.
