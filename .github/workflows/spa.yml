@@ -38,6 +38,8 @@ jobs:
       # Þagni allir — fellr þetta skref, ok hofit stendr sem þat stóð.
       # Engi gǫmul spá er borin fram sem ný; þat var sǫk vikna 32-38.
       - name: Vǫlvan kveðr
+        id: kveda
+        continue-on-error: true
         env:
           GROQ_API_KEY:       ${{ secrets.GROQ_API_KEY }}
           CEREBRAS_API_KEY:   ${{ secrets.CEREBRAS_API_KEY }}
@@ -46,7 +48,10 @@ jobs:
           GEMINI_API_KEY:     ${{ secrets.GEMINI_API_KEY }}
         run: python seidr/vala.py
 
+      # Ritat ávallt — líka þótt vǫlvan hafi þagat. Þǫgnin sjálf er gjǫrð í
+      # geymslunni, ok heldr helgisiðnum lifandi (60-daga reglan).
       - name: Rísta í annálana
+        if: always()
         run: |
           git config user.name  "Vǫlva"
           git config user.email "volva@users.noreply.github.com"
@@ -54,13 +59,14 @@ jobs:
           if git diff --cached --quiet; then
             echo "Engi ný spá at rísta."
           else
-            git commit -m "spá: $(date -u +%G-V%V)"
+            git commit -m "$(test -f hof/spa.json && grep -q '\"þǫgn\": true' hof/heilsa.json && echo "þǫgn: $(date -u +%G-V%V)" || echo "spá: $(date -u +%G-V%V)")"
             git push
           fi
 
       # Hjartsláttrinn var ritaðr, en engi hlýddi á hann. Þagni vǫlvan meir en
       # átta daga, þá skal þat sjást — eigi eftir sjau vikur sem fyrr.
       - name: Hlýða á hjartaslátt
+        if: always()
         run: |
           python - <<'PY'
           import json, sys, datetime
@@ -76,6 +82,12 @@ jobs:
           if dagar > 8:
               sys.exit(f"Vǫlvan hefir þagat í {dagar} daga. Helgisiðrinn fellr.")
           PY
+
+      - name: Þagði vǫlvan?
+        if: steps.kveda.outcome == 'failure'
+        run: |
+          echo "Vǫlvan þagði þessa viku. Þǫgnin er rituð; engi spá birt."
+          exit 1
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

@@ -339,7 +339,30 @@ def helgisiðr() -> int:
                 f"Brunnar með lykli: {andi.brunnar_reiðubúnir() or 'engir'}",
                 file=ᚷᚨᛈ.stderr,
             )
-            print("Ekkert ritat. Spá fyrri viku stendr óhreyfð.", file=ᚷᚨᛈ.stderr)
+            # Þǫgnin er rituð — en engi spá. Tvær ástæður:
+            #  1. at hon sjáist í hofinu sjálfu, eigi einungis í loggum;
+            #  2. at ein skrá breytist, svá at gjǫrð verði í geymslunni. Elligar
+            #     slœkkvir GitHub helgisiðinn eftir 60 daga kyrrð — ok þá vaknar
+            #     vǫlvan aldri framar, ok engi hjartsláttr getr sagt frá því.
+            ᚺᛟᚠ.mkdir(parents=True, exist_ok=True)
+            heilsa = {}
+            hleið = ᚺᛟᚠ / "heilsa.json"
+            if hleið.exists():
+                try:
+                    heilsa = ᚱᚢᚾ.loads(hleið.read_text(encoding="utf-8"))
+                except Exception:
+                    heilsa = {}
+            heilsa.update({
+                "þǫgn": True,
+                "síðasta_tilraun": nú.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "sǫk": str(e)[:400],
+                "brunnar": andi.brunnar_reiðubúnir(),
+            })
+            hleið.write_text(
+                ᚱᚢᚾ.dumps(heilsa, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+            print("Þǫgnin rituð í heilsa.json. Engi spá. "
+                  "Spá fyrri viku stendr óhreyfð.", file=ᚷᚨᛈ.stderr)
             return 1
 
     ᚺᛟᚠ.mkdir(parents=True, exist_ok=True)
@@ -368,6 +391,7 @@ def helgisiðr() -> int:
     (ᚺᛟᚠ / "heilsa.json").write_text(
         ᚱᚢᚾ.dumps(
             {
+                "þǫgn": False,
                 "síðasta_spá": nú.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "vika": vika,
                 "brunnr": brunnr,
