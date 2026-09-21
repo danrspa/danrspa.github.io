@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import json as ᚱᚢᚾ                  # rúnir — leyndarmál talna
 import os as ᚢᛁᛋᛏ                   # vist — heimkynni andans
+import re as ᛚᛖᛁᛏ                   # leit — mynstr í orðum
 import sys as ᚷᚨᛈ                   # ginnunga-gap — hit auða
+import time as ᛏᛁᛗᛁ                 # tími — bið vǫlvunnar
 import urllib.error as ᚢᛁᛚᛚᚨ        # villa — þá er vegrinn bregzt
 import urllib.request as ᚢᛖᚷ        # vegr — leið orðanna
 
@@ -135,6 +137,36 @@ _LǪG = {"openai": _kalla_openai, "gemini": _kalla_gemini}
 # --------------------------------------------------------------------------
 # Ganga at brunnunum
 # --------------------------------------------------------------------------
+def _bið_af(e: ᚢᛁᛚᛚᚨ.HTTPError, líkami: str) -> float:
+    """Hversu lengi brunnrinn biðr um bið. Hann segir þat sjálfr, ef spurt er."""
+    haus = e.headers.get("Retry-After") if e.headers else None
+    if haus:
+        try:
+            return min(float(haus), 30.0)
+        except ValueError:
+            pass
+    m = ᛚᛖᛁᛏ.search(r"try again in ([0-9.]+)s", líkami)
+    return min(float(m.group(1)), 30.0) + 0.5 if m else 5.0
+
+
+def _reyna(brunnr: dict, lykill: str, galdr: str, ákall: str, hiti: float) -> str:
+    """Of ákaft kall þreytir brunninn (429). Þá bíðr vǫlvan, sem hon kann."""
+    for atlaga in range(3):
+        try:
+            return _LǪG[brunnr["lag"]](brunnr, lykill, galdr, ákall, hiti)
+        except ᚢᛁᛚᛚᚨ.HTTPError as e:
+            if e.code != 429 or atlaga == 2:
+                raise
+            líkami = e.read().decode("utf-8", "replace")
+            bið = _bið_af(e, líkami)
+            print(
+                f"Brunnr '{brunnr['heiti']}' þreyttr (429); bíð {bið:.0f}s.",
+                file=ᚷᚨᛈ.stderr,
+            )
+            ᛏᛁᛗᛁ.sleep(bið)
+    raise RuntimeError("óviðræðanligt")
+
+
 def brunnar_reiðubúnir() -> list[str]:
     """Heiti þeirra brunna sem eiga lykil í þessari vist."""
     return [b["heiti"] for b in BRUNNAR if _lykill_af(b)]
@@ -152,7 +184,7 @@ def kalla(galdr: str, ákall: str, hiti: float = 1.0) -> tuple[str, str]:
             raunir.append(f"{brunnr['heiti']}: engi lykill")
             continue
         try:
-            efni = _LǪG[brunnr["lag"]](brunnr, lykill, galdr, ákall, hiti)
+            efni = _reyna(brunnr, lykill, galdr, ákall, hiti)
             if efni:
                 print(f"Brunnr '{brunnr['heiti']}' svaraði.", file=ᚷᚨᛈ.stderr)
                 return efni, brunnr["heiti"]

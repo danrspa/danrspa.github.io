@@ -32,14 +32,16 @@ HÆTTIR = [
     "Þrjú stutt erindi, þrjár línur hvert.",
     "Sex línur. Hver lína hefst á nafnorði; engi lýsingarorð.",
     "Átta línur sem enda á spurningu er eigi verðr svarat.",
-    "Tvau erindi. Hit fyrra spyrr, hit síðara svarar með mynd, eigi með orði.",
+    "Tvau erindi, fjórar línur hvert. Hit fyrra spyrr, hit síðara svarar "
+    "með mynd, eigi með orði.",
     "Sjau línur, hver styttri en hin fyrri.",
     "Eitt erindi, tíu línur, sem eitt andartak — engi punktr fyrr en at lyktum.",
     "Fjórar línur einar. Hvert orð skal vinna fyrir sér.",
     "Tvau erindi, fimm línur hvert, borin uppi af kenningum.",
     "Níu línur. Hin þriðja, sétta ok níunda skulu vera stakar — ein rǫdd á móti.",
     "Sex línur í annarri persónu — kvæðit ávarpar þann er les.",
-    "Tvau erindi. Hit fyrra í fortíð, hit síðara í framtíð; hvárugt í nútíð.",
+    "Tvau erindi, fjórar línur hvert. Hit fyrra í fortíð, hit síðara í framtíð; "
+    "hvárugt í nútíð.",
     "Átta línur. Engi lína má hefjast á sama staf sem hin næsta á undan.",
 ]
 
@@ -112,6 +114,12 @@ def er_endrtekning(spá: dict, annálar: list[dict]) -> str | None:
             return f"of líkt spánni frá {a.get('vika')} ({l:.0%})"
     if ᛚᛖᛁᛏ.match(r"^(Echoes|Whispers|Embers|Beneath|Under|Shadows)\b", titill, ᛚᛖᛁᛏ.I):
         return f"slitinn titil-háttr: '{titill}'"
+    # Tveir titlar í rǫð er hefjast eins ('Iron Dawn', 'Iron Pulse') eru einn titill
+    fyrsta = titill.split()[0].lower() if titill.split() else ""
+    for a in annálar[:4]:
+        gamalt = (a.get("titill") or "").split()
+        if fyrsta and gamalt and gamalt[0].lower() == fyrsta:
+            return f"titill hefst sem sá frá {a.get('vika')}: '{fyrsta}'"
     return None
 
 
@@ -156,14 +164,16 @@ def leki(spá: dict, hrátt: list[str] | None = None) -> str | None:
 
     # Orð tekin beint ór fyrirsǫgnum vikunnar. Borit saman um stofn (5 stafi),
     # svá at 'Yemenis' í frétt grípi 'Yemen' í kvæði.
+    # Einungis sérkennileg orð eru talin: eiginnǫfn (hástafr inni í línu) eða
+    # lǫng orð (7+). Ella greip dómrinn 'still' ok 'storm' — mál skáldsins sjálfs.
     if hrátt:
         stofnar = set()
         for r in hrátt:
-            stofnar |= {
-                o.lower()[:5] for o in ᛚᛖᛁᛏ.findall(r"[A-Za-z]{5,}", r)
-                if o.lower() not in ᛋᛏᛟᛈ
-            }
-        for o in ᛚᛖᛁᛏ.findall(r"[A-Za-z]{5,}", texti):
+            for o in ᛚᛖᛁᛏ.findall(r"\b[A-Za-z]{5,}\b", r):
+                sérkennilegt = (o[0].isupper() and not r.startswith(o)) or len(o) >= 7
+                if sérkennilegt and o.lower() not in ᛋᛏᛟᛈ:
+                    stofnar.add(o.lower()[:5])
+        for o in ᛚᛖᛁᛏ.findall(r"\b[A-Za-z]{5,}\b", texti):
             if o.lower() not in ᛋᛏᛟᛈ and o.lower()[:5] in stofnar:
                 return f"orð tekit ór fyrirsǫgn: '{o}'"
 
