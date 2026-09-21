@@ -13,6 +13,9 @@ import urllib.error as ᚢᛁᛚᛚᚨ        # villa — þá er vegrinn bregzt
 import urllib.request as ᚢᛖᚷ        # vegr — leið orðanna
 
 ᛒᛁᚦ = 60                            # hversu lengi vǫlvan bíðr svars
+# Mark farandans. Án þess þekkir vǫrðrinn (Cloudflare) ókunnan gest ok lýkr hliðinu
+# — villa 1010. Sjálfgefit mark urllib dugir eigi.
+ᛗᚨᚱᚲ = "vala/1.0 (+https://danrspa.github.io)"
 
 
 class ÞǫgnAndans(RuntimeError):
@@ -96,6 +99,7 @@ def _kalla_openai(brunnr: dict, lykill: str, galdr: str, ákall: str, hiti: floa
             "Content-Type": "application/json",
             "Authorization": f"Bearer {lykill}",
             "Accept": "application/json",
+            "User-Agent": ᛗᚨᚱᚲ,
         },
         method="POST",
     )
@@ -116,6 +120,7 @@ def _kalla_gemini(brunnr: dict, lykill: str, galdr: str, ákall: str, hiti: floa
             "Content-Type": "application/json",
             "x-goog-api-key": lykill,
             "Accept": "application/json",
+            "User-Agent": ᛗᚨᚱᚲ,
         },
         method="POST",
     )
