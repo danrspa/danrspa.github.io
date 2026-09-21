@@ -58,6 +58,23 @@ jobs:
             git push
           fi
 
+      # Hjartsláttrinn var ritaðr, en engi hlýddi á hann. Þagni vǫlvan meir en
+      # átta daga, þá skal þat sjást — eigi eftir sjau vikur sem fyrr.
+      - name: Hlýða á hjartaslátt
+        run: |
+          python - <<'PY'
+          import json, sys, datetime
+          try:
+              h = json.load(open("hof/heilsa.json", encoding="utf-8"))
+          except Exception as e:
+              sys.exit(f"Engi hjartsláttr fannst: {e}")
+          síðast = datetime.datetime.strptime(h["síðasta_spá"], "%Y-%m-%dT%H:%M:%SZ")
+          dagar = (datetime.datetime.utcnow() - síðast).days
+          print(f"Síðasta spá: {h['vika']} ({h['brunnr']}), fyrir {dagar} dǫgum.")
+          if dagar > 8:
+              sys.exit(f"Vǫlvan hefir þagat í {dagar} daga. Helgisiðrinn fellr.")
+          PY
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

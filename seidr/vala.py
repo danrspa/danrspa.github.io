@@ -59,6 +59,7 @@ Skap heimsins þessa viku — tǫlur einar, 0 til 10. Þær eru veðr, eigi efni
 {skap}
 
 Árstíðin nú: {árstíð}.
+{munr}
 
 Ker þessarar viku (haltu þat nákvæmliga):
 {háttr}
@@ -76,6 +77,11 @@ Yrk eitt kvæði ór þessari stemningu, ekki meir.
 
 # Vǫlvan hafnaði fyrri tilraun. Andinn veit þat eigi nema honum sé sagt —
 # ella endrtekr hann somu sǫkina þrisvar ok þegir at lyktum.
+MUNR = """
+Munr frá viku sem leið (hvert heimrinn stefnir, eigi hvar hann stendr):
+{raðir}
+"""
+
 AÐFINNSLA = """
 Fyrri tilraun þinni var HAFNAT, af þessari sǫk:
   {sǫk}
@@ -114,6 +120,25 @@ LOKUN_ENGL = "Haf kvæðit allt á ensku, án rússnesku ok án kýrillsks letur
 # --------------------------------------------------------------------------
 # Spyrja andann  (kalla ór djúpinu eptir spá)
 # --------------------------------------------------------------------------
+ÁSAR = ("ófriðr", "harmr", "járn", "vald", "þrjózka", "ljós")
+
+
+def _munr_í_línur(nú: dict, áðr: dict | None) -> str:
+    """Hvat hefir vaxit ok hvat þorrit síðan síðast."""
+    if not áðr:
+        return ""
+    raðir = []
+    for ás in ÁSAR:
+        if ás not in áðr:
+            continue
+        d = nú[ás] - áðr[ás]
+        if abs(d) >= 3:
+            raðir.append(f"  {ás:9s} {'vex' if d > 0 else 'þverr'} ({d:+d})")
+    if not raðir:
+        raðir.append("  (kyrrt — heimrinn stendr sem hann stóð)")
+    return MUNR.format(raðir="\n".join(raðir))
+
+
 def _skap_í_línur(skap: dict) -> str:
     """Skapit ritat svá at engi setning heimsins fylgi með."""
     raðir = [
@@ -135,6 +160,7 @@ def spyrja_andann(
     skap: dict,
     vika: str,
     árstíð: str,
+    munr: str,
     háttr: str,
     þreytt: list[str],
     titlar: list[str],
@@ -145,6 +171,7 @@ def spyrja_andann(
     ákall = ÁKALL.format(
         skap=_skap_í_línur(skap),
         árstíð=árstíð,
+        munr=munr,
         háttr=háttr,
         þreytt=", ".join(þreytt) if þreytt else "(engi enn)",
         titlar="\n".join(f"- {t}" for t in titlar) if titlar else "(engir enn)",
@@ -192,6 +219,8 @@ def kveða_spá(
     með heitara blóði. Þagni allir brunnar — þá þegir hon upphátt (ÞǫgnAndans);
     hér er engi gǫmul spá borin fram sem ný. Þat var sǫk hinna sjau vikna."""
     árstíð = heimr.árstíð_heiti(stund)
+    fyrra_skap = next((a.get("skap") for a in annálar if a.get("skap")), None)
+    munr = _munr_í_línur(skap, fyrra_skap)
     háttr = minni.háttr_vikunnar(vika, annálar)
     þreytt = minni.þreytt_orð(annálar)
     titlar = minni.þreyttir_titlar(annálar)
@@ -203,7 +232,8 @@ def kveða_spá(
         hiti = 0.9 + 0.12 * tilraun
         try:
             spá, brunnr = spyrja_andann(
-                skap, vika, árstíð, háttr, þreytt, titlar, rúss, hiti, síðasta_sǫk
+                skap, vika, árstíð, munr, háttr, þreytt, titlar, rúss, hiti,
+                síðasta_sǫk
             )
         except andi.ÞǫgnAndans:
             raise
@@ -289,6 +319,7 @@ def helgisiðr() -> int:
     fyrri = [a for a in annálar if a.get("vika") != vika]
 
     brunnr, háttr = "draumr", "—"
+    teikn = {"skap": None}
     if args.draumr:
         spá = gǫmul_spá()
     else:
@@ -321,6 +352,7 @@ def helgisiðr() -> int:
         "dagr_heiti": dagr_heiti,
         "háttr": háttr,
         "brunnr": brunnr,
+        "skap": teikn["skap"] if not args.draumr else None,
     }
     (ᚺᛟᚠ / "spa.json").write_text(
         ᚱᚢᚾ.dumps(skrá_spá, ensure_ascii=False, indent=2), encoding="utf-8"

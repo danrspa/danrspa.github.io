@@ -20,6 +20,10 @@ from datetime import datetime as ᛋᛏᚢᚾᛞ, timezone as ᛒᛖᛚᛏᛁ
 ᛒᛁᚦ = 15                            # hversu lengi vǫlvan bíðr svars
 
 
+class HeimrÞegir(RuntimeError):
+    """Engi straumr svaraði. Betra er þǫgn en kvæði ór tómi."""
+
+
 def _sœkja(slóð: str) -> bytes:
     # sœkja orð af veginum
     beiðni = ᚢᛖᚷ.Request(slóð, headers={"User-Agent": ᛗᚨᚱᚲ})
@@ -63,6 +67,9 @@ BRUNNAR_ÞJÓÐA = [
     # jaðarrinn — þeir sem standa utan hallar
     ("https://freedomnews.org.uk/feed/", "jaðarr"),
     ("https://crimethinc.com/feed", "jaðarr"),
+    # staðrinn — ein borg, nær. Heimrinn er eigi einungis fjarlægr.
+    ("https://www.rtvutrecht.nl/rss/nieuws.xml", "staðr"),
+    ("https://www.ad.nl/utrecht/rss.xml", "staðr"),
 ]
 
 ᚨᛏᛟᛗ = "{http://www.w3.org/2005/Atom}"
@@ -173,39 +180,50 @@ def himintungl(stund: ᛋᛏᚢᚾᛞ | None = None) -> list[str]:
         "war", "strike", "clash", "attack", "kill", "troops", "missile", "siege",
         "raid", "escalate", "battle", "bomb", "assault", "offensive", "militar",
         "krig", "angrep", "drept", "strid",
+        "oorlog", "aanval", "geweld", "gevecht", "leger", "aanslag", "schiet",
     ),
     "harmr": (
         "dead", "death", "died", "flee", "fled", "famine", "collapse", "victim",
         "quake", "flood", "drown", "mourn", "funeral", "displaced", "evacuat",
         "død", "flykt", "ulykke", "sorg",
+        "dood", "overled", "slachtoffer", "ramp", "gewond", "vermist", "brand",
     ),
     "járn": (
         "ai", "model", "chip", "comput", "code", "robot", "algorithm", "software",
         "data", "quantum", "neural", "silicon", "server", "kernel", "compiler",
         "llm", "gpu", "protocol", "machine",
+        "digitaal", "kunstmatige", "algoritme", "technolog",
     ),
     "vald": (
         "court", "law", "ban", "election", "president", "minister", "sanction",
         "parliament", "ruling", "regime", "senate", "treaty", "tariff", "policy",
         "vote", "regjering", "domstol", "val",
+        "rechtbank", "verbod", "minister", "kabinet", "gemeente", "raad",
+        "uitspraak", "verkiezing",
     ),
     "þrjózka": (
         "protest", "union", "mutual", "solidarity", "occupy", "resist", "commune",
         "squat", "anarch", "riot", "boycott", "picket", "autonom", "collective",
         "streik", "motstand",
+        "staking", "protest", "demonstratie", "kraak", "bezetting", "vakbond",
     ),
 }
 
 
+# Vika þar sem þriðjungr raddanna ber einn ás er heit vika. Væri talit beint
+# í hundraðshlutum, stœði kvarðinn jafnan í 0–2, ok skapit væri dautt.
+ᛗᛖᛏᛏᚢᚾ = 0.35
+
+
 def _vega(raddir: list[str]) -> dict[str, int]:
-    """Hlutfall raddanna sem bera hvern ás — talit 0…10."""
+    """Hlutfall raddanna sem bera hvern ás — teygt yfir kvarðann 0…10."""
     if not raddir:
         return {á: 0 for á in ᚨᛋᛁᚱ}
     lágt = [r.lower() for r in raddir]
     vog: dict[str, int] = {}
     for ás, orð in ᚨᛋᛁᚱ.items():
         n = sum(1 for r in lágt if any(o in r for o in orð))
-        vog[ás] = round(10 * n / len(lágt))
+        vog[ás] = min(10, round(10 * (n / len(lágt)) / ᛗᛖᛏᛏᚢᚾ))
     return vog
 
 
@@ -242,6 +260,13 @@ def safna_teiknum(stund: ᛋᛏᚢᚾᛞ | None = None, kast: ᚺᛚᚢᛏ.Rando
     kast = kast or ᚺᛚᚢᛏ.Random()
     smiðja = raddir_smiðju()
     þjóðir = raddir_þjóða(kast=kast)
+    # Þegðu allir straumar, yrði skapit tómt (0 á hverjum ás) ok vǫlvan kvæði
+    # ór engu — sama þǫgn ok fyrr, í nýjum klæðum. Hér er hon stöðvuð.
+    if len(smiðja) + len(þjóðir) < 4:
+        raise HeimrÞegir(
+            f"Heimrinn þegir: {len(smiðja)} raddir ór smiðju, "
+            f"{len(þjóðir)} ór þjóðum. Engi spá verðr ort ór engu."
+        )
     return {
         "skap": skapvísir(stund, smiðja, þjóðir),
         "hrátt": smiðja + þjóðir,      # einungis til loggar; fer aldri í galdrinn
