@@ -256,18 +256,20 @@ def kveða_spá(
     )
 
 
-def gǫmul_spá() -> dict:
+def draumr() -> dict:
+    """Þat sem vǫlvan sér sofandi — aldri þat sem hon mælir vakandi.
+
+    Hér stóð áðr "Eldr hinna ófrjálsu": raunveruleg spá, ok því hættuleg.
+    Hon var borin fram sjau vikur í rǫð sem ný, ok engi sá muninn. Draumr
+    skal segja til sín sjálfr, svá at hann verði aldri tekinn fyrir spá."""
     return {
-        "titill": "Eldr hinna ófrjálsu",
+        "titill": "Draumr, eigi spá",
         "vísur": (
-            "No crown is heavy that no head will wear.\n"
-            "The frost counts kings the way it counts the dead —\n"
-            "by the silence after.\n"
-            "Build, then, in the cold that has no throne;\n"
-            "the spark you keep is the only law you own.\n"
-            "When the long winter leans against the door,\n"
-            "be the ember, not the empire.\n"
-            "держись, брат"
+            "This is a dream the seeress had. It is not a word she spoke.\n"
+            "No world was listened to here. No moon was counted.\n"
+            "No well was asked, and none of them answered.\n"
+            "If you are reading this carved on the wall, the wall is lying:\n"
+            "the rite was run by hand, and the oracle is still asleep."
         ),
     }
 
@@ -321,7 +323,7 @@ def helgisiðr() -> int:
     brunnr, háttr = "draumr", "—"
     teikn = {"skap": None}
     if args.draumr:
-        spá = gǫmul_spá()
+        spá = draumr()
     else:
         teikn = heimr.safna_teiknum(nú)
         rúss = ᚺᛚᚢᛏ.random() < 0.2   # sjaldan fellr rúnneskan á tunguna (~1 af 5)

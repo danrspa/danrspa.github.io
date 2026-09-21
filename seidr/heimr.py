@@ -9,9 +9,11 @@
 
 from __future__ import annotations
 
+import concurrent.futures as ᚦᚱᛖᚦᛁᚱ  # þræðir — margar raddir í senn
 import json as ᚱᚢᚾ                  # rúnir — leyndarmál talna
 import random as ᚺᛚᚢᛏ              # hlutkesti — kast örlaganna
 import re as ᛚᛖᛁᛏ                   # leit — mynstr í orðum
+import sys as ᚷᚨᛈ                   # ginnunga-gap — hit auða
 import urllib.request as ᚢᛖᚷ       # vegr — leið orðanna
 import xml.etree.ElementTree as ᚱᛁᛋᛏ  # rist — markaðar línur í steini
 from datetime import datetime as ᛋᛏᚢᚾᛞ, timezone as ᛒᛖᛚᛏᛁ
@@ -34,23 +36,27 @@ def _sœkja(slóð: str) -> bytes:
 # --------------------------------------------------------------------------
 # Raddir ór smiðju manna  (þar sem hlutir eru smíðaðir ór tölum)
 # --------------------------------------------------------------------------
-def raddir_smiðju(fjǫldi: int = 8) -> list[str]:
+def raddir_smiðju(fjǫldi: int = 18) -> list[str]:
+    """Áðr var hverr hlutr sóttr í sinni ferð, hverr á eftir ǫðrum. Nú fara
+    allir sendimenn í senn. Ok fleiri raddir: átta voru of fáar til at vega
+    með — ein rǫdd af átta stǫkk kvarðanum um heilan fjórðung."""
+    def _titill(eind: int) -> str | None:
+        try:
+            hlutr = ᚱᚢᚾ.loads(
+                _sœkja(f"https://hacker-news.firebaseio.com/v0/item/{eind}.json")
+            )
+            return (hlutr or {}).get("title")
+        except Exception:
+            return None
+
     try:
-        eindir = ᚱᚢᚾ.loads(_sœkja("https://hacker-news.firebaseio.com/v0/topstories.json"))[: fjǫldi * 2]
-        titlar: list[str] = []
-        for eind in eindir:
-            try:
-                hlutr = ᚱᚢᚾ.loads(_sœkja(f"https://hacker-news.firebaseio.com/v0/item/{eind}.json"))
-                t = (hlutr or {}).get("title")
-                if t:
-                    titlar.append(t)
-            except Exception:
-                continue
-            if len(titlar) >= fjǫldi:
-                break
-        return titlar
+        eindir = ᚱᚢᚾ.loads(
+            _sœkja("https://hacker-news.firebaseio.com/v0/topstories.json")
+        )[:fjǫldi]
     except Exception:
         return []
+    with ᚦᚱᛖᚦᛁᚱ.ThreadPoolExecutor(max_workers=10) as sveit:
+        return [t for t in sveit.map(_titill, eindir) if t]
 
 
 # --------------------------------------------------------------------------
@@ -67,10 +73,13 @@ BRUNNAR_ÞJÓÐA = [
     # jaðarrinn — þeir sem standa utan hallar
     ("https://freedomnews.org.uk/feed/", "jaðarr"),
     ("https://crimethinc.com/feed", "jaðarr"),
+    ("https://meduza.io/rss/en/all", "heimr"),
     # staðrinn — ein borg, nær. Heimrinn er eigi einungis fjarlægr.
     ("https://www.rtvutrecht.nl/rss/nieuws.xml", "staðr"),
     ("https://www.ad.nl/utrecht/rss.xml", "staðr"),
 ]
+
+KYN = ("norðr", "heimr", "jaðarr", "staðr")
 
 ᚨᛏᛟᛗ = "{http://www.w3.org/2005/Atom}"
 
@@ -95,20 +104,38 @@ def _greinar(slóð: str) -> list[str]:
     return út
 
 
-def raddir_þjóða(fjǫldi: int = 8, kast: ᚺᛚᚢᛏ.Random | None = None) -> list[str]:
+def raddir_þjóða(fjǫldi: int = 12, kast: ᚺᛚᚢᛏ.Random | None = None) -> list[str]:
     """Áðr tók hon ór fyrsta brunni sem svaraði — ok þat var ávallt hinn sami.
-    Nú blandar hon ór ǫllum þeim er svara, svá at engi ein rǫdd ræðr skapinu."""
+    Nú svara allir samtímis, ok hvert kyn á sinn hlut: norðr, heimr, jaðarr,
+    staðr. Áðr var blandat ok skorit af handahófi, ok þá gat heilt kyn horfit
+    ór vikunni af tilviljun einni."""
     kast = kast or ᚺᛚᚢᛏ.Random()
+    eftir_kyni: dict[str, list[str]] = {k: [] for k in KYN}
+    þagðir: list[str] = []
+
+    with ᚦᚱᛖᚦᛁᚱ.ThreadPoolExecutor(max_workers=len(BRUNNAR_ÞJÓÐA)) as sveit:
+        verk = {sveit.submit(_greinar, s): (s, k) for s, k in BRUNNAR_ÞJÓÐA}
+        for v in ᚦᚱᛖᚦᛁᚱ.as_completed(verk):
+            slóð, kyn = verk[v]
+            try:
+                greinar = v.result()
+            except Exception as e:
+                þagðir.append(f"{slóð.split('/')[2]} ({type(e).__name__})")
+                continue
+            if greinar:
+                eftir_kyni[kyn] += greinar
+            else:
+                þagðir.append(f"{slóð.split('/')[2]} (tómr)")
+
+    if þagðir:   # rotnun brunnanna skal sjást, eigi hverfa í kyrrþey
+        print("Brunnar sem þǫgðu: " + ", ".join(sorted(þagðir)), file=ᚷᚨᛈ.stderr)
+
+    hlutr = max(1, fjǫldi // len(KYN))
     safn: list[str] = []
-    brunnar = list(BRUNNAR_ÞJÓÐA)
-    kast.shuffle(brunnar)
-    for slóð, _kyn in brunnar:
-        try:
-            greinar = _greinar(slóð)
-        except Exception:
-            continue
+    for kyn in KYN:
+        greinar = eftir_kyni[kyn]
         kast.shuffle(greinar)
-        safn += greinar[:3]
+        safn += greinar[:hlutr]
     kast.shuffle(safn)
     return safn[:fjǫldi]
 
@@ -175,55 +202,81 @@ def himintungl(stund: ᛋᛏᚢᚾᛞ | None = None) -> list[str]:
 # Hér verða orð at tǫlum. Engi setning heimsins kemzt lengra en hingat: þaðan
 # af ferðast einungis hiti, þungi, járn, vald, þrjózka ok ljós.
 # --------------------------------------------------------------------------
+# Orðin voru áðr leitat sem hlutar orða, ok þá varð "rain" at járni (ai),
+# "band" at valdi (ban), "available" at járni. Skapit var hávaði einn.
+# Nú er leitat at heilum orðum; stjarna merkir stofn ("militar*" = militant,
+# military, militarised).
 ᚨᛋᛁᚱ: dict[str, tuple[str, ...]] = {
     "ófriðr": (
-        "war", "strike", "clash", "attack", "kill", "troops", "missile", "siege",
-        "raid", "escalate", "battle", "bomb", "assault", "offensive", "militar",
-        "krig", "angrep", "drept", "strid",
-        "oorlog", "aanval", "geweld", "gevecht", "leger", "aanslag", "schiet",
+        "war", "wars", "warfare", "clash*", "attack*", "kill*", "troops",
+        "missile*", "siege", "raid*", "escalat*", "battle*", "bomb*",
+        "assault*", "offensive", "militar*", "airstrike*", "shelling",
+        "krig*", "angrep*", "drept", "strid",
+        "oorlog*", "aanval*", "geweld*", "gevecht*", "leger", "aanslag*", "schiet*",
     ),
     "harmr": (
-        "dead", "death", "died", "flee", "fled", "famine", "collapse", "victim",
-        "quake", "flood", "drown", "mourn", "funeral", "displaced", "evacuat",
-        "død", "flykt", "ulykke", "sorg",
-        "dood", "overled", "slachtoffer", "ramp", "gewond", "vermist", "brand",
+        "dead", "death*", "died", "flee*", "fled", "famine", "collapse*",
+        "victim*", "quake*", "flood*", "drown*", "mourn*", "funeral",
+        "displaced", "evacuat*", "casualt*", "toll",
+        "død", "flykt*", "ulykke", "sorg",
+        "dood", "overled*", "slachtoffer*", "ramp", "rampen", "gewond*", "vermist*",
     ),
     "járn": (
-        "ai", "model", "chip", "comput", "code", "robot", "algorithm", "software",
-        "data", "quantum", "neural", "silicon", "server", "kernel", "compiler",
-        "llm", "gpu", "protocol", "machine",
-        "digitaal", "kunstmatige", "algoritme", "technolog",
+        "ai", "model*", "chip*", "comput*", "code", "coding", "robot*",
+        "algorithm*", "software", "data", "dataset*", "quantum", "neural",
+        "silicon", "server*", "kernel", "compiler*", "llm*", "gpu*",
+        "protocol*", "machine*", "artificial", "intelligence", "transformer*",
+        "encrypt*", "decrypt*", "semiconductor*", "processor*", "firmware",
+        "database*", "browser*", "linux", "kernel*", "crypto*", "startup*",
+        "cloud", "compiler*", "runtime", "framework*", "benchmark*",
+        "digitaal", "kunstmatige", "algoritme*", "technolog*",
     ),
     "vald": (
-        "court", "law", "ban", "election", "president", "minister", "sanction",
-        "parliament", "ruling", "regime", "senate", "treaty", "tariff", "policy",
-        "vote", "regjering", "domstol", "val",
-        "rechtbank", "verbod", "minister", "kabinet", "gemeente", "raad",
-        "uitspraak", "verkiezing",
+        "court*", "law", "laws", "ban", "bans", "banned", "election*",
+        "president*", "minister*", "sanction*", "parliament*", "ruling*",
+        "regime*", "senate", "treaty", "tariff*", "policy", "vote*",
+        "regjering*", "domstol*", "valg",
+        "rechtbank*", "verbod*", "kabinet*", "gemeente*", "raad", "uitspraak*",
+        "verkiezing*",
     ),
     "þrjózka": (
-        "protest", "union", "mutual", "solidarity", "occupy", "resist", "commune",
-        "squat", "anarch", "riot", "boycott", "picket", "autonom", "collective",
-        "streik", "motstand",
-        "staking", "protest", "demonstratie", "kraak", "bezetting", "vakbond",
+        "protest*", "union*", "solidarity", "occupy", "occupation", "resist*",
+        "commune", "squat*", "anarch*", "riot*", "boycott*", "picket*",
+        "autonom*", "collective*", "strike*", "walkout*",
+        "streik*", "motstand*",
+        "staking*", "demonstratie*", "kraak*", "krak*", "bezetting*", "vakbond*",
     ),
+}
+
+# Hvert orð verðr at mynstri: heilt orð, eða stofn ef stjarna fylgir.
+ᛗᚤᚾᛋᛏᚱ: dict[str, ᛚᛖᛁᛏ.Pattern] = {
+    ás: ᛚᛖᛁᛏ.compile(
+        "|".join(
+            r"\b" + ᛚᛖᛁᛏ.escape(o[:-1]) + r"\w*" if o.endswith("*")
+            else r"\b" + ᛚᛖᛁᛏ.escape(o) + r"\b"
+            for o in orð
+        ),
+        ᛚᛖᛁᛏ.I,
+    )
+    for ás, orð in ᚨᛋᛁᚱ.items()
 }
 
 
 # Vika þar sem þriðjungr raddanna ber einn ás er heit vika. Væri talit beint
-# í hundraðshlutum, stœði kvarðinn jafnan í 0–2, ok skapit væri dautt.
-ᛗᛖᛏᛏᚢᚾ = 0.35
+# í hundraðshlutum, stœði kvarðinn jafnan í 0-2, ok skapit væri dautt.
+ᛗᛖᛏᛏᚢᚾ = {"járn": 0.70}
+ᛗᛖᛏᛏᚢᚾ_ALMENN = 0.35
 
 
 def _vega(raddir: list[str]) -> dict[str, int]:
     """Hlutfall raddanna sem bera hvern ás — teygt yfir kvarðann 0…10."""
     if not raddir:
         return {á: 0 for á in ᚨᛋᛁᚱ}
-    lágt = [r.lower() for r in raddir]
     vog: dict[str, int] = {}
-    for ás, orð in ᚨᛋᛁᚱ.items():
-        n = sum(1 for r in lágt if any(o in r for o in orð))
-        vog[ás] = min(10, round(10 * (n / len(lágt)) / ᛗᛖᛏᛏᚢᚾ))
+    for ás, mynstr in ᛗᚤᚾᛋᛏᚱ.items():
+        n = sum(1 for r in raddir if mynstr.search(r))
+        mett = ᛗᛖᛏᛏᚢᚾ.get(ás, ᛗᛖᛏᛏᚢᚾ_ALMENN)
+        vog[ás] = min(10, round(10 * (n / len(raddir)) / mett))
     return vog
 
 
