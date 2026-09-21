@@ -1,0 +1,125 @@
+# -*- coding: utf-8 -*-
+# ᛗᛁᚾᚾᛁ · minni vǫlvunnar.
+# Hon mundi ekki hvat hon hafði kveðit, ok því kvað hon hit sama um sinn ok sinn:
+# skuggar, hvískr, frelsi, frost — sextán vikur ór einum brunni orða.
+# Nú man hon. Þat sem einu sinni var kveðit, verðr eigi kveðit ǫðru sinni.
+
+from __future__ import annotations
+
+import hashlib as ᚺᚨᛋ               # hasl — mark ór mǫrgu
+import re as ᛚᛖᛁᛏ                   # leit — mynstr í orðum
+from collections import Counter as ᛏᚨᛚ
+
+# Orð sem bera enga merking í samanburði
+ᛋᛏᛟᛈ = frozenset("""
+the a an and or but in of on at to for from by with as is are was were be been
+that this these those it its his her their our we you i not no yet each all
+what when where while through into over under again then than so if
+""".split())
+
+# Hversu líkt má nýtt kvæði vera hinu gamla áðr en þat telst endrtekning
+LIKT_MARK = 0.22
+# Hversu margar vikur aptr vǫlvan man í smáatriðum
+MINNIS_DJUP = 12
+
+
+# --------------------------------------------------------------------------
+# Hættirnir — nýtt ker hverja viku, þótt rǫddin sé hin sama
+# --------------------------------------------------------------------------
+HÆTTIR = [
+    "Tvau erindi, fjórar línur hvert. Stuðlar skulu bera hverja línu (fornyrðislag).",
+    "Eitt órofit erindi, átta línur, engi rím.",
+    "Þrjú stutt erindi, þrjár línur hvert.",
+    "Sex línur. Hver lína hefst á nafnorði; engi lýsingarorð.",
+    "Átta línur sem enda á spurningu er eigi verðr svarat.",
+    "Tvau erindi. Hit fyrra spyrr, hit síðara svarar með mynd, eigi með orði.",
+    "Sjau línur, hver styttri en hin fyrri.",
+    "Eitt erindi, tíu línur, sem eitt andartak — engi punktr fyrr en at lyktum.",
+    "Fjórar línur einar. Hvert orð skal vinna fyrir sér.",
+    "Tvau erindi, fimm línur hvert, borin uppi af kenningum.",
+    "Níu línur. Hin þriðja, sétta ok níunda skulu vera stakar — ein rǫdd á móti.",
+    "Sex línur í annarri persónu — kvæðit ávarpar þann er les.",
+    "Tvau erindi. Hit fyrra í fortíð, hit síðara í framtíð; hvárugt í nútíð.",
+    "Átta línur. Engi lína má hefjast á sama staf sem hin næsta á undan.",
+]
+
+
+def háttr_vikunnar(vika: str, annálar: list[dict]) -> str:
+    """Hættinum er kastat ór vikunni sjálfri — sami kastr hverja viku,
+    en aldri sá er síðast var kveðinn við."""
+    nýlegir = {a.get("háttr") for a in annálar[:3] if a.get("háttr")}
+    mark = int(ᚺᚨᛋ.sha256(vika.encode("utf-8")).hexdigest()[:8], 16)
+    for skref in range(len(HÆTTIR)):
+        h = HÆTTIR[(mark + skref) % len(HÆTTIR)]
+        if h not in nýlegir:
+            return h
+    return HÆTTIR[mark % len(HÆTTIR)]
+
+
+# --------------------------------------------------------------------------
+# Þreytt orð — brunnr sem þraut
+# --------------------------------------------------------------------------
+def _orð(texti: str) -> list[str]:
+    return [o.lower() for o in ᛚᛖᛁᛏ.findall(r"[A-Za-z']+", texti)]
+
+
+def _kjarni(texti: str) -> set[str]:
+    return {o for o in _orð(texti) if o not in ᛋᛏᛟᛈ and len(o) > 3}
+
+
+def þreytt_orð(annálar: list[dict], fjǫldi: int = 22) -> list[str]:
+    """Orð sem vǫlvan hefir þegar slitit — þau skal hon eigi taka upp aptr.
+
+    Talit er í kvæðum, eigi í orðum: eitt kvæði sem endrtekit var sjau sinnum
+    er enn eitt kvæði. Ella myndi ein endrtekning kæfa hin sǫnnu slitnu orð."""
+    séð: set[str] = set()
+    tal = ᛏᚨᛚ()
+    for a in annálar[:MINNIS_DJUP]:
+        vísur = a.get("vísur", "").strip()
+        if not vísur or vísur in séð:
+            continue
+        séð.add(vísur)
+        tal.update(_kjarni(vísur))       # hvert orð talit einu sinni per kvæði
+    return [o for o, n in tal.most_common() if n >= 2][:fjǫldi]
+
+
+def þreyttir_titlar(annálar: list[dict], fjǫldi: int = 10) -> list[str]:
+    return [a["titill"] for a in annálar[:fjǫldi] if a.get("titill")]
+
+
+# --------------------------------------------------------------------------
+# Dómr um endrtekning
+# --------------------------------------------------------------------------
+def líking(a: str, b: str) -> float:
+    x, y = _kjarni(a), _kjarni(b)
+    if not x or not y:
+        return 0.0
+    return len(x & y) / len(x | y)
+
+
+def er_endrtekning(spá: dict, annálar: list[dict]) -> str | None:
+    """Skilar sǫk ef kvæðit er endrtekning — annars None."""
+    vísur, titill = spá.get("vísur", ""), spá.get("titill", "")
+    if not vísur.strip():
+        return "tómar vísur"
+    for a in annálar:
+        if a.get("vísur", "").strip() == vísur.strip():
+            return f"samhljóða spánni frá {a.get('vika')}"
+        if titill and a.get("titill", "").lower() == titill.lower():
+            return f"titill þegar borinn í {a.get('vika')}"
+        l = líking(vísur, a.get("vísur", ""))
+        if l > LIKT_MARK:
+            return f"of líkt spánni frá {a.get('vika')} ({l:.0%})"
+    if ᛚᛖᛁᛏ.match(r"^(Echoes|Whispers|Embers|Beneath|Under|Shadows)\b", titill, ᛚᛖᛁᛏ.I):
+        return f"slitinn titil-háttr: '{titill}'"
+    return None
+
+
+def lesa_annála(leið) -> list[dict]:
+    import json as ᚱᚢᚾ
+    if not leið.exists():
+        return []
+    try:
+        return ᚱᚢᚾ.loads(leið.read_text(encoding="utf-8"))
+    except Exception:
+        return []

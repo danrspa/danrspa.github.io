@@ -16,7 +16,6 @@ permissions:
   contents: write              # rísta nýja spá í annálana
   pages: write                 # birta hofit heiminum
   id-token: write              # krafa deploy-pages
-  models: read                 # andinn — frjáls spá
 
 concurrency:
   group: spa-vikunnar
@@ -35,16 +34,23 @@ jobs:
         with:
           python-version: "3.12"
 
+      # Brunnarnir. Hverr sem settr er, verðr reyndr í rǫð (sjá seidr/andi.py).
+      # Þagni allir — fellr þetta skref, ok hofit stendr sem þat stóð.
+      # Engi gǫmul spá er borin fram sem ný; þat var sǫk vikna 32-38.
       - name: Vǫlvan kveðr
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GROQ_API_KEY:       ${{ secrets.GROQ_API_KEY }}
+          CEREBRAS_API_KEY:   ${{ secrets.CEREBRAS_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          MISTRAL_API_KEY:    ${{ secrets.MISTRAL_API_KEY }}
+          GEMINI_API_KEY:     ${{ secrets.GEMINI_API_KEY }}
         run: python seidr/vala.py
 
       - name: Rísta í annálana
         run: |
           git config user.name  "Vǫlva"
           git config user.email "volva@users.noreply.github.com"
-          git add hof/spa.json hof/annalar.json hof/index.html hof/salr.html
+          git add hof/spa.json hof/annalar.json hof/index.html hof/salr.html hof/heilsa.json
           if git diff --cached --quiet; then
             echo "Engi ný spá at rísta."
           else

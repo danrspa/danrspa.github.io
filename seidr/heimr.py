@@ -96,6 +96,18 @@ def _árstíð(stund: ᛋᛏᚢᚾᛞ) -> str:
     }[m]
 
 
+ᛗᚨᚾᚢᚦᛁᚱ = [
+    "janúar", "febrúar", "marz", "apríl", "maí", "júní",
+    "júlí", "ágúst", "september", "október", "nóvember", "desember",
+]
+
+
+def árstíð_heiti(stund: ᛋᛏᚢᚾᛞ | None = None) -> str:
+    """Hin sanna árstíð, sǫgð berum orðum — svá at vǫlvan yrki eigi vetr í júlí."""
+    stund = stund or ᛋᛏᚢᚾᛞ.now(ᛒᛖᛚᛏᛁ.utc)
+    return f"{_árstíð(stund)} ({ᛗᚨᚾᚢᚦᛁᚱ[stund.month - 1]}, norðrhvel)"
+
+
 def himintungl(stund: ᛋᛏᚢᚾᛞ | None = None) -> list[str]:
     stund = stund or ᛋᛏᚢᚾᛞ.now(ᛒᛖᛚᛏᛁ.utc)
     teikn = [_mánaskifti(stund), f"djúpt {_árstíð(stund)}"]

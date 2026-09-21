@@ -14,20 +14,18 @@ import json as ᚱᚢᚾ                  # rúnir — leyndarmál talna
 import random as ᚺᛚᚢᛏ              # hlutkesti — kast um lokaorðin
 import os as ᚢᛁᛋᛏ                   # vist — heimkynni andans
 import sys as ᚷᚨᛈ                   # ginnunga-gap — hit auða
-import urllib.error as ᚢᛁᛚᛚᚨ        # villa — þá er vegrinn bregzt
-import urllib.request as ᚢᛖᚷ        # vegr — leið orðanna
 from datetime import datetime as ᛋᛏᚢᚾᛞ, timezone as ᛒᛖᛚᛏᛁ
 from pathlib import Path as ᛋᛏᛁᚷᚱ   # stígr — gata um hofit
 
+import andi   # brunnar djúpsins
 import heimr  # raddir heimsins
+import minni  # þat sem þegar var kveðit
 
 ᚱᛟᛏ = ᛋᛏᛁᚷᚱ(__file__).resolve().parent.parent
 ᚺᛟᚠ = ᚱᛟᛏ / "hof"   # hofit — þar sem spáin birtist heiminum
 ᛗᛟᛏ = ᚱᛟᛏ / "mot"   # mótin — form rúnanna
 
-# Andinn sem talar ór djúpinu (frjáls; engi lykill þér til byrðar).
-ANDI_VEGR = ᚢᛁᛋᛏ.environ.get("ANDI_VEGR", "https://models.github.ai/inference/chat/completions")
-ANDI = ᚢᛁᛋᛏ.environ.get("ANDI", "openai/gpt-4o-mini")
+# Andinn á engan einn brunn lengr — sjá andi.py. Sá brunnr sem fyrstr svarar, talar.
 
 # Galdrinn sem mótar rǫdd vǫlvunnar.  (Andinn les þetta sem sína skipun.)
 # Galdrinn er sjálfr á norrœnu — andinn les hann, en kveðr þó á ensku.
@@ -37,12 +35,15 @@ handa vin sem ann hinum kalda norðri, frjálsri tækni ok frelsi.
 
 Háttr:
 - Heimspekilegt ok tímalaust: ørlǫg, frelsi, sjálfit hjá vélinni, smæð keisaradœma, \
-reisn hinna óstýrðu, hinn langi vetr ok eldrinn sem lifir hann af.
+reisn hinna óstýrðu, ok eldrinn sem lifir af þat sem at honum sœkir.
 - Knappt, þungt, sǫgulegt. Kenningar vel þegnar. Rím er frjálst.
-- Sex til tólf stuttar línur, í einu eða tveimr erindum.
 - Þér kunna at fylgja fá skap-orð um veðr heimsins. Lát þau einungis lita stemninguna. \
 Snú þeim í myndir náttúru ok ørlaga; haldu kvæðinu almennu ok nefn enga atburði.
 - Titill ok kvæði skulu vera á ensku. Stuttr myndrœnn titill, tvau til fjǫgur orð.
+- Árstíðin sem þér er sǫgð er hin sanna. Yrk í hennar ljósi, eigi í vetri sem eigi er.
+- Forðastu hin slitnu orð sem þér eru talin. Þau eru þegar kveðin til þurrðar. \
+Finn nýja mynd í staðinn — engan skugga, engan hvískr, engan neista er áðr brann.
+- Titillinn skal eigi vera "X of Y". Nefn hlut, eigi hugtak.
 
 Svaraðu með JSON-hlut, engum kóða-girðingum:
 {"title": "...", "verse": "lína\\nlína"}
@@ -51,6 +52,17 @@ Svaraðu með JSON-hlut, engum kóða-girðingum:
 ÁKALL = """\
 Skap-orð þessar viku:
 {teikn}
+
+Árstíðin nú: {árstíð}.
+
+Ker þessarar viku (haltu þat nákvæmliga):
+{háttr}
+
+Slitin orð — engi þeirra má standa í kvæðinu:
+{þreytt}
+
+Titlar þegar bornir — engi líkr þeim:
+{titlar}
 
 {lokun}
 
@@ -68,46 +80,25 @@ LOKUN_ENGL = "Haf kvæðit allt á ensku, án rússnesku ok án kýrillsks letur
 # --------------------------------------------------------------------------
 # Spyrja andann  (kalla ór djúpinu eptir spá)
 # --------------------------------------------------------------------------
-def spyrja_andann(teikn: list[str], rúss: bool = False) -> dict:
-    lykill = ᚢᛁᛋᛏ.environ.get("GITHUB_TOKEN") or ᚢᛁᛋᛏ.environ.get("ANDI_LYKILL")
-    if not lykill:
-        raise RuntimeError(
-            "Andinn svarar eigi án lykils. Í helgisiðnum (Actions) er hann gefinn "
-            "sjálfkrafa (permissions: models: read). Heima: ganga með --draumr, eða "
-            "setja  export GITHUB_TOKEN=…"
-        )
-
-    bœn = {
-        "model": ANDI,
-        "temperature": 1.0,
-        "top_p": 0.95,
-        "messages": [
-            {"role": "system", "content": GALDR},
-            {"role": "user", "content": ÁKALL.format(
-                teikn="\n".join(f"- {t}" for t in teikn),
-                lokun=(LOKUN_RUSS if rúss else LOKUN_ENGL),
-            )},
-        ],
-    }
-    beiðni = ᚢᛖᚷ.Request(
-        ANDI_VEGR,
-        data=ᚱᚢᚾ.dumps(bœn).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {lykill}",
-            "Accept": "application/json",
-        },
-        method="POST",
+def spyrja_andann(
+    teikn: list[str],
+    árstíð: str,
+    háttr: str,
+    þreytt: list[str],
+    titlar: list[str],
+    rúss: bool = False,
+    hiti: float = 1.0,
+) -> tuple[dict, str]:
+    ákall = ÁKALL.format(
+        teikn="\n".join(f"- {t}" for t in teikn),
+        árstíð=árstíð,
+        háttr=háttr,
+        þreytt=", ".join(þreytt) if þreytt else "(engi enn)",
+        titlar="\n".join(f"- {t}" for t in titlar) if titlar else "(engir enn)",
+        lokun=(LOKUN_RUSS if rúss else LOKUN_ENGL),
     )
-    try:
-        with ᚢᛖᚷ.urlopen(beiðni, timeout=60) as svar:
-            gögn = ᚱᚢᚾ.loads(svar.read())
-    except ᚢᛁᛚᛚᚨ.HTTPError as e:
-        likami = e.read().decode("utf-8", "replace")
-        print(f"Andinn reiddist ({e.code}) við '{ANDI}': {likami}", file=ᚷᚨᛈ.stderr)
-        raise
-    efni = gögn["choices"][0]["message"]["content"].strip()
-    return _lesa_spá(efni)
+    efni, brunnr = andi.kalla(GALDR, ákall, hiti)
+    return _lesa_spá(efni), brunnr
 
 
 def _lesa_spá(efni: str) -> dict:
@@ -126,17 +117,45 @@ def _lesa_spá(efni: str) -> dict:
         }
 
 
-def kveða_spá(teikn: list[str], stund: ᛋᛏᚢᚾᛞ, rúss: bool = False) -> dict:
-    """Freista með ǫllum teiknum; bregðist andinn (sía, o.s.frv.), þá með himni
-    einum (ávallt óhultr), at lyktum með gamalli spá. Vǫlvan þagnar aldri."""
-    freistingar = [teikn, heimr.himintungl(stund)]
-    for i, t in enumerate(freistingar, 1):
+def kveða_spá(
+    teikn: list[str],
+    stund: ᛋᛏᚢᚾᛞ,
+    vika: str,
+    annálar: list[dict],
+    rúss: bool = False,
+) -> tuple[dict, str, str]:
+    """Kveðr, ok dœmir sjálf um sitt verk. Sé kvæðit endrtekning, kveðr hon aptr
+    með heitara blóði. Þagni allir brunnar — þá þegir hon upphátt (ÞǫgnAndans);
+    hér er engi gǫmul spá borin fram sem ný. Þat var sǫk hinna sjau vikna."""
+    árstíð = heimr.árstíð_heiti(stund)
+    háttr = minni.háttr_vikunnar(vika, annálar)
+    þreytt = minni.þreytt_orð(annálar)
+    titlar = minni.þreyttir_titlar(annálar)
+    print(f"Háttr: {háttr}", file=ᚷᚨᛈ.stderr)
+    print(f"Slitin orð ({len(þreytt)}): {', '.join(þreytt)}", file=ᚷᚨᛈ.stderr)
+
+    síðasta_sǫk = "engi tilraun"
+    for tilraun in range(1, 4):
+        hiti = 0.9 + 0.15 * tilraun
         try:
-            return spyrja_andann(t, rúss)
+            spá, brunnr = spyrja_andann(
+                teikn, árstíð, háttr, þreytt, titlar, rúss, hiti
+            )
+        except andi.ÞǫgnAndans:
+            raise
         except Exception as e:
-            print(f"Freisting {i} brást: {e}", file=ᚷᚨᛈ.stderr)
-    print("Andinn þagði; vǫlvan kveðr ór minni sínu.", file=ᚷᚨᛈ.stderr)
-    return gǫmul_spá()
+            síðasta_sǫk = f"{type(e).__name__}: {e}"
+            print(f"Tilraun {tilraun} brást: {síðasta_sǫk}", file=ᚷᚨᛈ.stderr)
+            continue
+        sǫk = minni.er_endrtekning(spá, annálar)
+        if not sǫk:
+            return spá, brunnr, háttr
+        síðasta_sǫk = sǫk
+        print(f"Tilraun {tilraun} hafnat — {sǫk}", file=ᚷᚨᛈ.stderr)
+
+    raise andi.ÞǫgnAndans(
+        f"Vǫlvan náði engri nýrri spá í þremr tilraunum ({síðasta_sǫk})."
+    )
 
 
 def gǫmul_spá() -> dict:
@@ -197,13 +216,29 @@ def helgisiðr() -> int:
     vika = vika_af(nú)
     dagr_heiti = nú.strftime("%d.%m.%Y")
 
+    leið = ᚺᛟᚠ / "annalar.json"
+    annálar = minni.lesa_annála(leið)
+    fyrri = [a for a in annálar if a.get("vika") != vika]
+
+    brunnr, háttr = "draumr", "—"
     if args.draumr:
         spá = gǫmul_spá()
     else:
         teikn = heimr.safna_teiknum(nú)
         rúss = ᚺᛚᚢᛏ.random() < 0.2   # sjaldan fellr rúnneskan á tunguna (~1 af 5)
         print(f"Teikn ({teikn['tala']}): {teikn['teikn']} | rúnneska={rúss}", file=ᚷᚨᛈ.stderr)
-        spá = kveða_spá(teikn["teikn"], nú, rúss)
+        try:
+            spá, brunnr, háttr = kveða_spá(teikn["teikn"], nú, vika, fyrri, rúss)
+        except andi.ÞǫgnAndans as e:
+            # Vǫlvan þegir heldr en at endrtaka sik. Hofit stendr sem þat stóð;
+            # helgisiðrinn fellr, svá at þǫgnin sjáist.
+            print(f"\nÞǫGN ANDANS:\n{e}", file=ᚷᚨᛈ.stderr)
+            print(
+                f"Brunnar með lykli: {andi.brunnar_reiðubúnir() or 'engir'}",
+                file=ᚷᚨᛈ.stderr,
+            )
+            print("Ekkert ritat. Spá fyrri viku stendr óhreyfð.", file=ᚷᚨᛈ.stderr)
+            return 1
 
     ᚺᛟᚠ.mkdir(parents=True, exist_ok=True)
 
@@ -213,22 +248,33 @@ def helgisiðr() -> int:
         "vika": vika,
         "dagr": nú.strftime("%Y-%m-%d"),
         "dagr_heiti": dagr_heiti,
+        "háttr": háttr,
+        "brunnr": brunnr,
     }
     (ᚺᛟᚠ / "spa.json").write_text(
         ᚱᚢᚾ.dumps(skrá_spá, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
-    # annálarnir — hver spá geymd, hin nýjasta efst, ein per viku
-    leið = ᚺᛟᚠ / "annalar.json"
-    annálar = []
-    if leið.exists():
-        try:
-            annálar = ᚱᚢᚾ.loads(leið.read_text(encoding="utf-8"))
-        except Exception:
-            annálar = []
-    annálar = [a for a in annálar if a.get("vika") != vika]
-    annálar.insert(0, skrá_spá)
-    leið.write_text(ᚱᚢᚾ.dumps(annálar, ensure_ascii=False, indent=2), encoding="utf-8")
+    # annálarnir — hver spá geymd, hin nýjasta efst, ein per viku.
+    # Draumr er eigi ristr: hann skal aldri mengja minni vǫlvunnar.
+    annálar = [skrá_spá] + fyrri
+    if not args.draumr:
+        leið.write_text(ᚱᚢᚾ.dumps(annálar, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    # hjartsláttr hofsins — svá at þǫgn sjáist innan viku, eigi eptir sjau
+    (ᚺᛟᚠ / "heilsa.json").write_text(
+        ᚱᚢᚾ.dumps(
+            {
+                "síðasta_spá": nú.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "vika": vika,
+                "brunnr": brunnr,
+                "annálar": len(annálar),
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
     # hofit sjálft (index.html)
     (ᚺᛟᚠ / "index.html").write_text(
