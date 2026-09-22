@@ -1,7 +1,7 @@
 [
   {
-    "titill": "Iron Moon Harvest",
-    "vísur": "The iron bark cracked under bruised sky.\nHarsh winds bruised the amber leaves.\nThe moon will rise, spilling argent fire.\nMetal will sing beneath the harvest’s rust.\nOld iron veins lay quiet in the loam.\nThe field had known the sting of iron's bite.\nNew cycles will forge the dusk with bright moons.\nThe world will turn, balanced on equal day and night.",
+    "titill": "Rusted Dawn",
+    "vísur": "The amber canopy fell, and rusted steel sang\nLeaves turned copper, while bright silver sphere rose\nA soft hum of latent power drifted through the loam\nThe furnace of autumn blazed, and strength lay dormant\nWhen twilight equalizes, steel will pulse beneath fallen bark\nSilver sphere will widen, spilling radiance onto trembling roots\nHidden currents of power will stir, and strength will rise like tide\nThe world will kindle, and we will walk beyond the veil\nты не один",
     "vika": "2026-V39",
     "dagr": "2026-09-22",
     "dagr_heiti": "22.09.2026",
@@ -9,9 +9,9 @@
     "brunnr": "groq",
     "skap": {
       "ófriðr": 0,
-      "harmr": 2,
-      "járn": 4,
-      "vald": 0,
+      "harmr": 0,
+      "járn": 5,
+      "vald": 2,
       "þrjózka": 2,
       "ljós": 7,
       "tungl": "vaxandi",
