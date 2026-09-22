@@ -63,10 +63,15 @@ def raddir_smiðju(fjǫldi: int = 18) -> list[str]:
 # Brunnar þjóðanna  (eigi hallarinnar einnar — norðrit ok jaðarinn með)
 # --------------------------------------------------------------------------
 BRUNNAR_ÞJÓÐA = [
-    # norðrit — hit kalda land sem kvæðit talar um
-    ("https://www.icelandreview.com/feed/", "norðr"),
+    # norðrit — hit kalda land sem kvæðit talar um. Sex raddir, því at tvær
+    # þǫgðu í fyrstu rétt-gjǫrðu viku (stundar-þǫgn, eigi varanleg), ok þá
+    # stóð norðrit — sjálft efni kvæðisins — á einum fœti.
     ("https://www.nrk.no/toppsaker.rss", "norðr"),
-    ("https://www.thelocal.se/feeds/rss.php", "norðr"),
+    ("https://www.svt.se/rss.xml", "norðr"),
+    ("https://www.dr.dk/nyheder/service/feeds/allenyheder", "norðr"),
+    ("https://www.ruv.is/rss/frettir", "norðr"),
+    ("https://icelandmonitor.mbl.is/rss/", "norðr"),
+    ("https://www.helsinkitimes.fi/?format=feed&type=rss", "norðr"),
     # heimrinn — tvær raddir, eigi ein
     ("https://feeds.bbci.co.uk/news/world/rss.xml", "heimr"),
     ("https://www.aljazeera.com/xml/rss/all.xml", "heimr"),
@@ -84,13 +89,21 @@ KYN = ("norðr", "heimr", "jaðarr", "staðr")
 ᚨᛏᛟᛗ = "{http://www.w3.org/2005/Atom}"
 
 
-def _greinar(slóð: str) -> list[str]:
+def _greinar(slóð: str, atlǫgur: int = 2) -> list[str]:
     """Titlar greinanna einna.
 
     Áðr var hér  titlar[1:]  — ok þá laust heiti brunnsins sjálfs inn sem teikn
     ('BBC News'), því at sumir brunnar bera heiti sitt tvisvar (rás ok mynd).
     Nú er gengit um <item>/<entry> ok tekinn beinn titill hvers — engi rásartitill."""
-    rót = ᚱᛁᛋᛏ.fromstring(_sœkja(slóð))
+    # Tveir brunnar þǫgðu í fyrstu viku (ParseError, HTTPError) en svǫruðu báðir
+    # skjótt eftir — stundar-hnot, eigi lokat hlið. Því er reynt tvisvar.
+    for atlaga in range(atlǫgur):
+        try:
+            rót = ᚱᛁᛋᛏ.fromstring(_sœkja(slóð))
+            break
+        except Exception:
+            if atlaga == atlǫgur - 1:
+                raise
     út: list[str] = []
     for eind in rót.iter("item"):
         t = eind.find("title")
@@ -211,14 +224,16 @@ def himintungl(stund: ᛋᛏᚢᚾᛞ | None = None) -> list[str]:
         "war", "wars", "warfare", "clash*", "attack*", "kill*", "troops",
         "missile*", "siege", "raid*", "escalat*", "battle*", "bomb*",
         "assault*", "offensive", "militar*", "airstrike*", "shelling",
-        "krig*", "angrep*", "drept", "strid",
+        "krig*", "angrep*", "drept", "drepn*", "anfall*", "dödad*", "dræbt*",
+        "strid", "stríð*", "árás*", "våld*", "vold*",
         "oorlog*", "aanval*", "geweld*", "gevecht*", "leger", "aanslag*", "schiet*",
     ),
     "harmr": (
         "dead", "death*", "died", "flee*", "fled", "famine", "collapse*",
         "victim*", "quake*", "flood*", "drown*", "mourn*", "funeral",
         "displaced", "evacuat*", "casualt*", "toll",
-        "død", "flykt*", "ulykke", "sorg",
+        "død", "død*", "döda", "flykt*", "ulykke*", "olyck*", "sorg",
+        "omkom*", "látin*", "slys*", "offer", "ofre",
         "dood", "overled*", "slachtoffer*", "ramp", "rampen", "gewond*", "vermist*",
     ),
     "járn": (
@@ -235,7 +250,9 @@ def himintungl(stund: ᛋᛏᚢᚾᛞ | None = None) -> list[str]:
         "court*", "law", "laws", "ban", "bans", "banned", "election*",
         "president*", "minister*", "sanction*", "parliament*", "ruling*",
         "regime*", "senate", "treaty", "tariff*", "policy", "vote*",
-        "regjering*", "domstol*", "valg",
+        "regjering*", "regering*", "ríkisstjórn*", "domstol*", "dómstól*",
+        "valg", "valet", "kosning*", "forbud*", "förbud*", "bann",
+        "statsminister*", "ráðherra",
         "rechtbank*", "verbod*", "kabinet*", "gemeente*", "raad", "uitspraak*",
         "verkiezing*",
     ),
@@ -243,7 +260,8 @@ def himintungl(stund: ᛋᛏᚢᚾᛞ | None = None) -> list[str]:
         "protest*", "union*", "solidarity", "occupy", "occupation", "resist*",
         "commune", "squat*", "anarch*", "riot*", "boycott*", "picket*",
         "autonom*", "collective*", "strike*", "walkout*",
-        "streik*", "motstand*",
+        "streik*", "strejk*", "verkfall*", "motstand*", "mótmæl*",
+        "fagforening*", "fack*", "demonstration*",
         "staking*", "demonstratie*", "kraak*", "krak*", "bezetting*", "vakbond*",
     ),
 }
