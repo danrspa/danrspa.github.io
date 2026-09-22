@@ -1,6 +1,6 @@
 {
-  "titill": "Iron Autumn",
-  "vísur": "The iron horizon shattered as twilight waned.\nRust‑kissed branches bowed, their crowns bruised by steel.\nLeaves of amber cracked, ash spilled upon the ground.\nChill air of night fell, sealing the harvest's sigh.\nSoon the silver moon will swell, its light will pierce the waning veil.\nRust will spread across the coppered fields, turning silence into metallic hymn.\nWind will stir the iron clouds, and the world will taste unbound fire.\nAt last the equinox will balance day and night, and freedom will rise beyond the forged horizon.",
+  "titill": "Iron Moon Harvest",
+  "vísur": "The iron bark cracked under bruised sky.\nHarsh winds bruised the amber leaves.\nThe moon will rise, spilling argent fire.\nMetal will sing beneath the harvest’s rust.\nOld iron veins lay quiet in the loam.\nThe field had known the sting of iron's bite.\nNew cycles will forge the dusk with bright moons.\nThe world will turn, balanced on equal day and night.",
   "vika": "2026-V39",
   "dagr": "2026-09-22",
   "dagr_heiti": "22.09.2026",
@@ -8,7 +8,7 @@
   "brunnr": "groq",
   "skap": {
     "ófriðr": 0,
-    "harmr": 0,
+    "harmr": 2,
     "járn": 4,
     "vald": 0,
     "þrjózka": 2,
