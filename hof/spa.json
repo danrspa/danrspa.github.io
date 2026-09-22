@@ -1,9 +1,21 @@
 {
-  "titill": "Crimson Algorithm",
-  "vísur": "djúpt haust draped the steel valleys in russet.\nThe vaxandi gibba swayed as machines sang in rust.\nYemenis fled beyond the scarlet tide, the horizon burned.\nOld codes cracked, the CI choke held the pulse of steel.\nThe empire's echo crumbled, its iron law dissolved.\n\nLater, a new algorithm will rise as amber fire.\nIt will self‑stabilize beyond the red horizon’s edge.\nIt will interlace the rising gibba of thought.\nAnd the world will watch as the crimson circuit will pulse.",
+  "titill": "Iron Autumn",
+  "vísur": "The iron horizon shattered as twilight waned.\nRust‑kissed branches bowed, their crowns bruised by steel.\nLeaves of amber cracked, ash spilled upon the ground.\nChill air of night fell, sealing the harvest's sigh.\nSoon the silver moon will swell, its light will pierce the waning veil.\nRust will spread across the coppered fields, turning silence into metallic hymn.\nWind will stir the iron clouds, and the world will taste unbound fire.\nAt last the equinox will balance day and night, and freedom will rise beyond the forged horizon.",
   "vika": "2026-V39",
-  "dagr": "2026-09-21",
-  "dagr_heiti": "21.09.2026",
-  "háttr": "Tvau erindi. Hit fyrra í fortíð, hit síðara í framtíð; hvárugt í nútíð.",
-  "brunnr": "groq"
+  "dagr": "2026-09-22",
+  "dagr_heiti": "22.09.2026",
+  "háttr": "Tvau erindi, fjórar línur hvert. Hit fyrra í fortíð, hit síðara í framtíð; hvárugt í nútíð.",
+  "brunnr": "groq",
+  "skap": {
+    "ófriðr": 0,
+    "harmr": 0,
+    "járn": 4,
+    "vald": 0,
+    "þrjózka": 2,
+    "ljós": 7,
+    "tungl": "vaxandi",
+    "árstíð": "haust",
+    "jafnvægi": true,
+    "hvörf": false
+  }
 }
