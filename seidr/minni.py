@@ -114,12 +114,16 @@ def er_endrtekning(spá: dict, annálar: list[dict]) -> str | None:
             return f"of líkt spánni frá {a.get('vika')} ({l:.0%})"
     if ᛚᛖᛁᛏ.match(r"^(Echoes|Whispers|Embers|Beneath|Under|Shadows)\b", titill, ᛚᛖᛁᛏ.I):
         return f"slitinn titil-háttr: '{titill}'"
-    # Tveir titlar í rǫð er hefjast eins ('Iron Dawn', 'Iron Pulse') eru einn titill
-    fyrsta = titill.split()[0].lower() if titill.split() else ""
-    for a in annálar[:4]:
-        gamalt = (a.get("titill") or "").split()
-        if fyrsta and gamalt and gamalt[0].lower() == fyrsta:
-            return f"titill hefst sem sá frá {a.get('vika')}: '{fyrsta}'"
+    # Áðr var einungis fyrsta orð borit saman, ok þá gengu 'Iron Dawn',
+    # 'Cinder Dawn' ok 'Rusted Dawn' allar í gegn. Nú dugir eitt sameiginligt
+    # orð til at fella titil — hvar sem þat stendr.
+    ný = {o.lower() for o in ᛚᛖᛁᛏ.findall(r"[A-Za-z']{4,}", titill)} - ᛋᛏᛟᛈ
+    for a in annálar[:5]:
+        gǫmul = {o.lower() for o in ᛚᛖᛁᛏ.findall(r"[A-Za-z']{4,}", a.get("titill") or "")}
+        sameign = ný & gǫmul - ᛋᛏᛟᛈ
+        if sameign:
+            return (f"titill deilir orði með {a.get('vika')}: "
+                    f"'{sorted(sameign)[0]}'")
     return None
 
 
