@@ -1,5 +1,26 @@
 [
   {
+    "titill": "Falling Ember",
+    "vísur": "Conflict\nMetal\nMight\nDim",
+    "vika": "2026-V41",
+    "dagr": "2026-10-05",
+    "dagr_heiti": "05.10.2026",
+    "háttr": "Fjórar línur einar. Hvert orð skal vinna fyrir sér.",
+    "brunnr": "groq",
+    "skap": {
+      "ófriðr": 5,
+      "harmr": 2,
+      "járn": 5,
+      "vald": 5,
+      "þrjózka": 2,
+      "ljós": 4,
+      "tungl": "þverrandi",
+      "árstíð": "haust",
+      "jafnvægi": false,
+      "hvörf": false
+    }
+  },
+  {
     "titill": "Crimson Autumn Engine",
     "vísur": "Pale leaves drift on a restless wind\nThe moon hangs sharp a blade of cold light\nMetal sighs in the rust of fallen crowns\nConflict murmurs low as ash in the air\nMetal echo fades the forge grows quiet\nAutumn breathes gold upon shattered stone\nThe sky burns with a relentless lunar spear\nShadows melt into the copper of fading fields\nMachines hum in the hush of harvest night\nFreedom rides the wind beyond the metal veil",
     "vika": "2026-V40",
