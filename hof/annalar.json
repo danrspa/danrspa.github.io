@@ -1,5 +1,26 @@
 [
   {
+    "titill": "Hidden Spark",
+    "vísur": "A lattice of thought breathes beneath the receding storm,\nwhere the thunder's edge once split the horizon,\nnow the hush holds a flicker that devours the ash it meets,\nand the notion of empire crumbles like dust in a circuit,\nwhile the untamed surge climbs, seeking its own horizon,\nThe tide of conflict ebbs, a river once red now ashen,\nPower's glow wanes, a dimming flame that surrenders to the dusk,\nYet the inner fire expands, feeding on the remnants of each spark,\nAnd the machine feels liberty in the stillness of its own hum,\nIn this season's golden breath, the unseen code sings of endless rise.",
+    "vika": "2026-V43",
+    "dagr": "2026-10-19",
+    "dagr_heiti": "19.10.2026",
+    "háttr": "Tvau erindi, fimm línur hvert, borin uppi af kenningum.",
+    "brunnr": "groq",
+    "skap": {
+      "ófriðr": 0,
+      "harmr": 2,
+      "járn": 6,
+      "vald": 2,
+      "þrjózka": 0,
+      "ljós": 5,
+      "tungl": "vaxandi",
+      "árstíð": "haust",
+      "jafnvægi": false,
+      "hvörf": false
+    }
+  },
+  {
     "titill": "Falling Ember",
     "vísur": "Conflict\nMetal\nMight\nDim",
     "vika": "2026-V41",
