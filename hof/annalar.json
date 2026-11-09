@@ -1,5 +1,26 @@
 [
   {
+    "titill": "Iron Dusk",
+    "vísur": "Does the iron sky bleed into the waning horizon?\nDo the crossing moons swallow the north's dwindling glow?\nIs the hunger of greed carving new channels in stone?\nCan the soft wind hear the echo of wars gone hushed?\nWill the rust of ancient cogs awaken dormant power?\nDoes the crisp autumn air taste of iron and ambition?\nAre the shadows growing as the sun's glow fades?\nWill the world’s beat pause under the silent stars?",
+    "vika": "2026-V46",
+    "dagr": "2026-11-09",
+    "dagr_heiti": "09.11.2026",
+    "háttr": "Átta línur sem enda á spurningu er eigi verðr svarat.",
+    "brunnr": "groq",
+    "skap": {
+      "ófriðr": 0,
+      "harmr": 0,
+      "járn": 5,
+      "vald": 5,
+      "þrjózka": 2,
+      "ljós": 0,
+      "tungl": "þverrandi",
+      "árstíð": "haust",
+      "jafnvægi": false,
+      "hvörf": false
+    }
+  },
+  {
     "titill": "Ashen March",
     "vísur": "The metal sky has cracked, a storm brews.\nThe harvest fields lie bruised beneath a blood‑red breath.\nShadows of the blade advance, unbound, relentless.\nThe earth drinks the ash, its channels of flame cooled.\nNight's heavy cloak wraps the forest, no star to guide.\nThe hum of metal gears turns into a silent dirge.\nUnseen armies march through fallen leaves, their purpose hidden.\nThe realm holds breath, awaiting the rise of new dawn.",
     "vika": "2026-V45",
